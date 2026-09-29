@@ -10,18 +10,28 @@ class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    /**
-     * Seed the application's database.
-     */
-   public function run(): void
-{
-    $this->call([
-        RoleSeeder::class,
-    ]);
+    public function run(): void
+    {
+        $this->call([
+            RoleSeeder::class,
+        ]);
 
-    User::factory()->create([
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-    ]);
-}
+        $reporter = User::factory()->create([
+            'name' => 'Test Reporter',
+            'email' => 'reporter@example.com',
+        ]);
+        $reporter->assignRole('reporting-personnel');
+
+        $reviewer = User::factory()->create([
+            'name' => 'Test Reviewer',
+            'email' => 'reviewer@example.com',
+        ]);
+        $reviewer->assignRole('command-center');
+
+        $admin = User::factory()->create([
+            'name' => 'Test Admin',
+            'email' => 'admin@example.com',
+        ]);
+        $admin->assignRole('administrator');
+    }
 }
