@@ -9,16 +9,16 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up(): void
-{
-    Schema::create('sitrep_personnel', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('sitrep_id')->constrained()->cascadeOnDelete();
-        $table->string('name');
-        $table->string('position');
-        $table->timestamps();
-    });
-}
+    public function up(): void
+    {
+        Schema::create('sitrep_personnel', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('sitrep_id')->constrained()->cascadeOnDelete();
+            $table->string('name');
+            $table->string('position');
+            $table->timestamps();
+        });
+    }
 
     /**
      * Reverse the migrations.

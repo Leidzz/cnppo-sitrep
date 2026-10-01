@@ -61,10 +61,10 @@ return [
         ],
 
         'sitrep_photos' => [
-                       'driver' => 'local',
-                       'root' => storage_path('app/private/sitrep_photos'),
-                       'visibility' => 'private',
-                       'throw' => false,
+            'driver' => 'local',
+            'root' => storage_path('app/private/sitrep_photos'),
+            'visibility' => 'private',
+            'throw' => false,
         ],
 
     ],
