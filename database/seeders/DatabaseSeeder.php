@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleSeeder::class,
+            StatusSeeder::class,
         ]);
 
         $reporter = User::factory()->create([
