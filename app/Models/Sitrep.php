@@ -31,9 +31,9 @@ class Sitrep extends Model
 
     protected $casts = [
         'dynamic_fields' => 'array',
-        'latitude' => 'decimal:7',
-        'longitude' => 'decimal:7',
-        'gps_accuracy_meters' => 'decimal:2',
+        'latitude' => 'float',        // CHANGED: was 'decimal:7'
+        'longitude' => 'float',       // CHANGED: was 'decimal:7'
+        'gps_accuracy_meters' => 'float', // CHANGED: was 'decimal:2'
         'location_captured_at' => 'datetime',
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
