@@ -68,4 +68,14 @@ class Sitrep extends Model
     {
         return $this->hasMany(SitrepPersonnel::class);
     }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
 }
