@@ -3,18 +3,46 @@
 namespace App\Http\Controllers\Reporting;
 
 use App\Http\Controllers\Controller;
+use App\Models\Status;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
     /**
-     * Reporting Personnel landing screen.
+     * Reporting Personnel dashboard.
      *
      * Route middleware (auth + role:reporting-personnel) has already verified
-     * the user before this runs, so this action only renders the view.
+     * the user. Counts come from actual system records (spec Section 4):
+     * one grouped query over the officer's own SITREPs — no hardcoded numbers.
      */
-    public function __invoke(): View
+    public function __invoke(Request $request): View
     {
-        return view('reporting.dashboard');
+        $user = $request->user();
+
+        $statuses = Status::whereIn('name', [
+            'Draft', 'Submitted', 'Under Review', 'Validated', 'Returned for Correction',
+        ])->get();
+
+        // One GROUP BY query for all five counts instead of five queries.
+        // pluck() gives us [status_id => count] for the view.
+        $counts = $user->sitreps()
+            ->whereIn('current_status_id', $statuses->pluck('id'))
+            ->select('current_status_id', DB::raw('count(*) as aggregate'))
+            ->groupBy('current_status_id')
+            ->pluck('aggregate', 'current_status_id');
+
+        $recent = $user->sitreps()
+            ->with(['currentStatus', 'reportType'])
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        return view('reporting.dashboard', [
+            'statuses' => $statuses,
+            'counts' => $counts,
+            'recent' => $recent,
+        ]);
     }
 }

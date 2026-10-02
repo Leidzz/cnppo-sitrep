@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Reporting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSitrepRequest;
 use App\Models\ReportType;
+use App\Models\Sitrep;
 use App\Services\AttachmentService;
 use App\Services\SitrepWorkflowService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SitrepController extends Controller
@@ -54,5 +56,45 @@ class SitrepController extends Controller
         return redirect()
             ->route('reporting.dashboard')
             ->with('status', $message);
+    }
+
+    /**
+     * My Reports — ONLY the current officer's own reports, newest first,
+     * with an optional status filter (?status=Draft etc.).
+     */
+    public function index(Request $request): View
+    {
+        $statuses = ['Draft', 'Submitted', 'Under Review', 'Validated', 'Returned for Correction'];
+
+        $sitreps = $request->user()->sitreps()
+            ->with(['currentStatus', 'reportType'])
+            ->when($request->query('status'), function ($q) use ($request, $statuses) {
+                // whitelist: only filter on statuses we recognize
+                abort_unless(in_array($request->query('status'), $statuses), 404);
+                $q->whereHas('currentStatus', fn ($s) => $s->where('name', $request->query('status')));
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();   // keeps ?status= alive when paginating
+
+        return view('reporting.sitreps.index', [
+            'sitreps' => $sitreps,
+            'statuses' => $statuses,
+            'activeStatus' => $request->query('status'),
+        ]);
+    }
+
+    /**
+     * View SITREP detail (spec Section 14). Read-only.
+     */
+    public function show(Sitrep $sitrep): View
+    {
+        // THE record-level check: author, command center, or admin.
+        // Any other officer gets 403 — even with a valid URL.
+        $this->authorize('view', $sitrep);
+
+        $sitrep->load(['reportType.templateFields', 'unit', 'creator', 'reviewer', 'currentStatus', 'attachments']);
+
+        return view('reporting.sitreps.show', compact('sitrep'));
     }
 }

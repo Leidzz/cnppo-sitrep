@@ -36,6 +36,17 @@ class User extends Authenticatable
         return $this->belongsTo(Unit::class);
     }
 
+    /**
+     * SITREPs this user created. NOTE the foreign key: the sitreps table
+     * calls it `created_by`, not `user_id`, so we state it explicitly.
+     *
+     * @return HasMany<Sitrep, $this>
+     */
+    public function sitreps(): HasMany
+    {
+        return $this->hasMany(Sitrep::class, 'created_by');
+    }
+
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);

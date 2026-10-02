@@ -37,6 +37,12 @@ Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(funct
         ->name('reporting.sitreps.create');
     Route::post('/reporting/sitreps', [SitrepController::class, 'store'])
         ->name('reporting.sitreps.store');
+
+    // NEW — Part D1: My Reports list + View Detail
+    Route::get('/reporting/sitreps', [SitrepController::class, 'index'])
+        ->name('reporting.sitreps.index');
+    Route::get('/reporting/sitreps/{sitrep}', [SitrepController::class, 'show'])
+        ->name('reporting.sitreps.show');
 });
 
 require __DIR__.'/auth.php';
