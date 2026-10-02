@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Reporting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSitrepRequest;
 use App\Models\ReportType;
+use App\Services\AttachmentService;
 use App\Services\SitrepWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -24,7 +25,7 @@ class SitrepController extends Controller
         ]);
     }
 
-    public function store(StoreSitrepRequest $request, SitrepWorkflowService $workflow): RedirectResponse
+    public function store(StoreSitrepRequest $request, SitrepWorkflowService $workflow, AttachmentService $attachments): RedirectResponse
     {
         $reportType = ReportType::findOrFail($request->integer('report_type_id'));
 
@@ -41,6 +42,10 @@ class SitrepController extends Controller
                 'location_description',
             ]),
         );
+
+        if ($request->hasFile('photos')) {
+            $attachments->storeForSitrep($sitrep, $request->user(), $request->file('photos'));
+        }
 
         $message = $request->input('action') === 'submit'
             ? "SITREP {$sitrep->reference_number} submitted."

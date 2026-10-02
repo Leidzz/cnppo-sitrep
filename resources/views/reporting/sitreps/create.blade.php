@@ -25,7 +25,9 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('reporting.sitreps.store') }}">
+            {{-- enctype REQUIRED for file uploads — browsers silently drop
+                 files without it --}}
+            <form method="POST" action="{{ route('reporting.sitreps.store') }}" enctype="multipart/form-data">
                 @csrf
 
                 {{-- 1. Report type picker: big tappable cards, one column on mobile --}}
@@ -190,7 +192,65 @@
                     </div>
                 </div>
 
-                {{-- 4. Actions: full-width on mobile, side by side on desktop.
+                {{-- 4. Photo documentation (spec Section 9). Preview + remove BEFORE
+                       submission, entirely client-side; server stores only what remains. --}}
+                <div class="mt-8" x-data="{
+                    previews: [],
+                    maxPhotos: 5,
+
+                    handleFiles(event) {
+                        [...event.target.files].forEach((file) => {
+                            if (this.previews.length >= this.maxPhotos) return;
+                            const reader = new FileReader();
+                            reader.onload = (e) => this.previews.push({ file, url: e.target.result });
+                            reader.readAsDataURL(file);
+                        });
+                        this.syncInput();
+                    },
+
+                    remove(index) {
+                        this.previews.splice(index, 1);
+                        this.syncInput();
+                    },
+
+                    // Rebuild the file input from what remains in previews, so
+                    // removed photos are truly NOT submitted (input.files is
+                    // read-only; DataTransfer is the standard workaround)
+                    syncInput() {
+                        const dt = new DataTransfer();
+                        this.previews.forEach((p) => dt.items.add(p.file));
+                        this.$refs.photosInput.files = dt.files;
+                    },
+                }">
+                    <h3 class="text-lg font-semibold text-gray-900">Photo Documentation</h3>
+                    <p class="mt-1 text-sm text-gray-500">JPEG, PNG, or WebP · max 5 MB each · up to 5 photos. GPS Map Camera output may be attached as a photo.</p>
+
+                    <label for="photos" class="mt-4 flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50">
+                        Choose Photos
+                        <input id="photos" type="file" name="photos[]" multiple
+                               accept="image/jpeg,image/png,image/webp"
+                               x-ref="photosInput"
+                               @change="handleFiles($event)"
+                               class="sr-only">
+                    </label>
+
+                    {{-- Previews: 3 columns, thumbs with remove buttons --}}
+                    <div class="mt-4 grid grid-cols-3 gap-2" x-show="previews.length > 0" x-cloak>
+                        <template x-for="(p, i) in previews" :key="i">
+                            <div class="relative">
+                                <img :src="p.url" alt="photo preview" class="h-24 w-full object-cover rounded-lg border border-gray-200">
+                                <button type="button" @click="remove(i)"
+                                        class="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-red-600 text-white text-sm font-bold shadow"
+                                        aria-label="Remove photo">×</button>
+                            </div>
+                        </template>
+                    </div>
+
+                    @error('photos') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                    @error('photos.*') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                {{-- 5. Actions: full-width on mobile, side by side on desktop.
                        'action' tells the server which path to take. --}}
                 <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3">
                     <button type="submit" name="action" value="draft"

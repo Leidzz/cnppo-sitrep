@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Reporting\DashboardController;
 use App\Http\Controllers\Reporting\SitrepController;
@@ -10,9 +11,6 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    // After login, send each role to its own dashboard section.
-    // Only the reporting dashboard exists so far; other roles keep the
-    // Breeze placeholder until their sections are built.
     if (auth()->user()->hasRole('reporting-personnel')) {
         return redirect()->route('reporting.dashboard');
     }
@@ -24,6 +22,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Photo serving: auth (this group) + parent-SITREP policy (in controller)
+    Route::get('/attachments/{attachment}/file', [AttachmentController::class, 'show'])
+        ->name('attachments.show');
 });
 
 // Reporting Personnel section
@@ -31,7 +33,6 @@ Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(funct
     Route::get('/reporting/dashboard', DashboardController::class)
         ->name('reporting.dashboard');
 
-    // NEW — Create SITREP (Step 5)
     Route::get('/reporting/sitreps/create', [SitrepController::class, 'create'])
         ->name('reporting.sitreps.create');
     Route::post('/reporting/sitreps', [SitrepController::class, 'store'])

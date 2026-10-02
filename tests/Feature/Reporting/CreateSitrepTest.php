@@ -10,6 +10,8 @@ use Database\Seeders\RoleSeeder;
 use Database\Seeders\StatusSeeder;
 use Database\Seeders\UnitSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -146,4 +148,57 @@ it('rejects out-of-range GPS coordinates', function () {
         'latitude' => 91.5,       // impossible — max is 90
         'longitude' => 200,       // impossible — max is 180
     ])->assertSessionHasErrors(['latitude', 'longitude']);
+});
+
+it('stores uploaded photos on the private disk with attachment rows', function () {
+    Storage::fake('sitrep_photos');
+
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+    $user = makeReporter();
+
+    $this->actingAs($user)->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'submit',
+        'dynamic_fields' => [
+            'what' => 'Checkpoint', 'where' => 'Brgy. Poblacion',
+            'when' => 'Oct 2, 8PM-10PM', 'how' => 'Standard checkpoint ops',
+        ],
+        'photos' => [
+            UploadedFile::fake()->image('checkpoint-1.jpg', 800, 600)->size(400),
+            UploadedFile::fake()->image('checkpoint-2.png', 800, 600)->size(300),
+        ],
+    ])->assertRedirect(route('reporting.dashboard'));
+
+    $sitrep = Sitrep::sole();
+    expect($sitrep->attachments)->toHaveCount(2);
+
+    $attachment = $sitrep->attachments->first();
+    expect($attachment->uploaded_by)->toBe($user->id);
+    expect($attachment->uploaded_at)->not->toBeNull();
+    expect(Storage::disk('sitrep_photos')->exists($attachment->file_path))->toBeTrue();
+});
+
+it('rejects non-image files even with a fake image extension', function () {
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => [],
+        'photos' => [UploadedFile::fake()->create('fake.jpg', 200, 'application/x-msdownload')],
+    ])->assertSessionHasErrors(['photos.0']);
+});
+
+it('rejects more than five photos', function () {
+    Storage::fake('sitrep_photos');
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $photos = array_fill(0, 6, UploadedFile::fake()->image('p.jpg', 100, 100)->size(50));
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => [],
+        'photos' => $photos,
+    ])->assertSessionHasErrors(['photos']);
 });

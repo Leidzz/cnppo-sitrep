@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Sitrep;
 use App\Models\User;
 
 class SitrepPolicy
@@ -15,5 +16,11 @@ class SitrepPolicy
     public function create(User $user): bool
     {
         return $user->hasRole('reporting-personnel');
+    }
+
+    public function view(User $user, Sitrep $sitrep): bool
+    {
+        return $user->id === $sitrep->created_by
+            || $user->hasAnyRole(['command-center', 'administrator']);
     }
 }

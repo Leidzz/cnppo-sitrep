@@ -34,6 +34,10 @@ class StoreSitrepRequest extends FormRequest
             'gps_accuracy_meters' => ['nullable', 'numeric', 'gt:0', 'lt:100000'],
             'location_captured_at' => ['nullable', 'date'],
             'location_description' => ['nullable', 'string', 'max:255'],
+
+            'photos' => ['nullable', 'array', 'max:5'],
+            'photos.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp',
+                'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
 
         $reportTypeId = $this->input('report_type_id');
