@@ -40,7 +40,9 @@
 
                 {{-- 2. Dynamic fields: one block per report type, Alpine shows the chosen one.
                        NOTHING here is hardcoded — labels, keys, required, and input type
-                       all come from template_fields. --}}
+                       all come from template_fields.
+                       FIX: inputs of unselected types are DISABLED, so the browser
+                       never submits them (duplicate names would overwrite each other). --}}
                 @foreach ($reportTypes as $rt)
                     <div x-show="type === {{ $rt->id }}" x-cloak class="mt-8 space-y-5">
                         <h3 class="text-lg font-semibold text-gray-900">{{ $rt->name }} Details</h3>
@@ -57,14 +59,18 @@
                                     <textarea id="df_{{ $field->field_key }}_{{ $rt->id }}"
                                               name="dynamic_fields[{{ $field->field_key }}]"
                                               rows="4"
+                                              :disabled="type !== {{ $rt->id }}"
                                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
-                                                     focus:border-blue-500 focus:ring-blue-500">{{ old('dynamic_fields.'.$field->field_key) }}</textarea>
+                                                     focus:border-blue-500 focus:ring-blue-500
+                                                     disabled:bg-gray-50 disabled:text-gray-400">{{ old('dynamic_fields.'.$field->field_key) }}</textarea>
                                 @else
                                     <input type="text" id="df_{{ $field->field_key }}_{{ $rt->id }}"
                                            name="dynamic_fields[{{ $field->field_key }}]"
                                            value="{{ old('dynamic_fields.'.$field->field_key) }}"
+                                           :disabled="type !== {{ $rt->id }}"
                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
-                                                  focus:border-blue-500 focus:ring-blue-500 min-h-[44px]">
+                                                  focus:border-blue-500 focus:ring-blue-500 min-h-[44px]
+                                                  disabled:bg-gray-50 disabled:text-gray-400">
                                 @endif
 
                                 @error('dynamic_fields.'.$field->field_key)
