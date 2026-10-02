@@ -27,6 +27,13 @@ class StoreSitrepRequest extends FormRequest
             'report_type_id' => ['required', 'exists:report_types,id'],
             'action' => ['required', 'in:draft,submit'],
             'dynamic_fields' => ['nullable', 'array'],
+
+            // GPS / location documentation (spec Section 7 — all OPTIONAL)
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'gps_accuracy_meters' => ['nullable', 'numeric', 'gt:0', 'lt:100000'],
+            'location_captured_at' => ['nullable', 'date'],
+            'location_description' => ['nullable', 'string', 'max:255'],
         ];
 
         $reportTypeId = $this->input('report_type_id');

@@ -109,3 +109,41 @@ it('forbids command-center users from storing a sitrep', function () {
         'dynamic_fields' => [],
     ])->assertForbidden();
 });
+
+it('stores GPS location fields on submit', function () {
+    $user = makeReporter();
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs($user)->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'submit',
+        'dynamic_fields' => [
+            'what' => 'Checkpoint', 'where' => 'Brgy. Poblacion',
+            'when' => 'Oct 2, 8PM-10PM', 'how' => 'Standard checkpoint ops',
+        ],
+        'latitude' => 13.6212847,
+        'longitude' => 122.9561234,
+        'gps_accuracy_meters' => 4.5,
+        'location_captured_at' => '2026-10-02T01:30:00.000000Z',
+        'location_description' => 'Brgy. Poblacion, national highway',
+    ])->assertRedirect(route('reporting.dashboard'));
+
+    $sitrep = Sitrep::sole();
+    expect($sitrep->latitude)->toBe(13.6212847);
+    expect($sitrep->longitude)->toBe(122.9561234);
+    expect($sitrep->gps_accuracy_meters)->toBe(4.5);
+    expect($sitrep->location_description)->toBe('Brgy. Poblacion, national highway');
+    expect($sitrep->location_captured_at)->not->toBeNull();
+});
+
+it('rejects out-of-range GPS coordinates', function () {
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => [],
+        'latitude' => 91.5,       // impossible — max is 90
+        'longitude' => 200,       // impossible — max is 180
+    ])->assertSessionHasErrors(['latitude', 'longitude']);
+});

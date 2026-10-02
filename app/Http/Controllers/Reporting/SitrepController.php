@@ -33,6 +33,13 @@ class SitrepController extends Controller
             reportType: $reportType,
             dynamicFields: $request->input('dynamic_fields', []),
             action: $request->string('action')->toString(),
+            location: $request->safe()->only([
+                'latitude',
+                'longitude',
+                'gps_accuracy_meters',
+                'location_captured_at',
+                'location_description',
+            ]),
         );
 
         $message = $request->input('action') === 'submit'

@@ -19,17 +19,21 @@ class SitrepWorkflowService
      * Wrapped in a DB transaction: either the SITREP + audit entries all
      * persist, or nothing does — no half-saved reports.
      */
-    public function create(User $user, ReportType $reportType, array $dynamicFields, string $action): Sitrep
+    public function create(User $user, ReportType $reportType, array $dynamicFields, string $action, array $location = []): Sitrep
     {
-        return DB::transaction(function () use ($user, $reportType, $dynamicFields, $action) {
-            $sitrep = Sitrep::create([
+        return DB::transaction(function () use ($user, $reportType, $dynamicFields, $action, $location) {
+            // Filter out nulls AND empty strings so untouched hidden fields
+            // never hit the database as '' (which would fail datetime columns).
+            $location = array_filter($location, fn ($v) => $v !== null && $v !== '');
+
+            $sitrep = Sitrep::create(array_merge([
                 'reference_number' => $this->generateReferenceNumber(),
-                'unit_id' => $user->unit_id,          // officer's own station, always
+                'unit_id' => $user->unit_id,
                 'report_type_id' => $reportType->id,
                 'current_status_id' => $this->statusId('Draft'),
                 'created_by' => $user->id,
                 'dynamic_fields' => $dynamicFields,
-            ]);
+            ], $location));
 
             $this->log($sitrep, $user, 'created', null, 'Draft', 'SITREP created.');
 
