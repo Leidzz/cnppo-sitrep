@@ -8,6 +8,13 @@
     <div class="px-4 py-6 sm:px-6 lg:px-8">
         <div class="max-w-xl mx-auto">
 
+            {{-- Flash message after creating/submitting a SITREP (Step 8) --}}
+            @if (session('status'))
+                <div class="mb-6 rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+                    {{ session('status') }}
+                </div>
+            @endif
+
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
                 Welcome, {{ auth()->user()->name }}
             </h1>
@@ -16,7 +23,8 @@
             </p>
 
             <div class="mt-8">
-                <a href="#"
+                {{-- NOW LINKS TO THE REAL FORM --}}
+                <a href="{{ route('reporting.sitreps.create') }}"
                    class="flex sm:inline-flex items-center justify-center w-full sm:w-auto
                           min-h-[44px] px-6 py-3 rounded-lg bg-blue-700 text-white
                           text-base font-semibold shadow hover:bg-blue-800

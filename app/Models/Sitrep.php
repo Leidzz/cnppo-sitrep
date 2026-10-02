@@ -49,6 +49,9 @@ class Sitrep extends Model
         return $this->belongsTo(ReportType::class);
     }
 
+    /**
+     * @return BelongsTo<Status, $this>
+    */
     public function currentStatus(): BelongsTo
     {
         return $this->belongsTo(Status::class, 'current_status_id');

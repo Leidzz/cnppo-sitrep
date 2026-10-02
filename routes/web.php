@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Reporting\DashboardController;
+use App\Http\Controllers\Reporting\SitrepController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,6 +30,12 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(function () {
     Route::get('/reporting/dashboard', DashboardController::class)
         ->name('reporting.dashboard');
+
+    // NEW — Create SITREP (Step 5)
+    Route::get('/reporting/sitreps/create', [SitrepController::class, 'create'])
+        ->name('reporting.sitreps.create');
+    Route::post('/reporting/sitreps', [SitrepController::class, 'store'])
+        ->name('reporting.sitreps.store');
 });
 
 require __DIR__.'/auth.php';
