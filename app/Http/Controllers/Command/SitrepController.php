@@ -88,4 +88,51 @@ class SitrepController extends Controller
             ->route('command.incoming')
             ->with('status', $message);
     }
+
+    /**
+     * All-Reports repository (spec Sections 12-13): searchable archive of
+     * every non-draft SITREP, filterable by keyword, date range, unit,
+     * report type, and status. Sort whitelist guards the ORDER BY.
+     */
+    public function reports(Request $request): View
+    {
+        $activeStatus = $request->query('status');
+        abort_unless(is_null($activeStatus) || in_array($activeStatus, self::QUEUE_STATUSES), 404);
+
+        $sort = $request->query('sort', 'desc');
+        abort_unless(in_array($sort, ['asc', 'desc'], true), 404);
+
+        $sitreps = Sitrep::query()
+            ->with(['unit', 'reportType', 'currentStatus'])
+            ->whereHas('currentStatus', fn ($q) => $q->whereIn('name', self::QUEUE_STATUSES))
+            // Keyword: reference number OR anywhere in the report content
+            ->when($request->query('q'), function ($q) use ($request) {
+                $keyword = '%'.$request->query('q').'%';
+                $q->where(fn ($inner) => $inner
+                    ->where('reference_number', 'like', $keyword)
+                    ->orWhere('dynamic_fields', 'like', $keyword));
+            })
+            ->when($activeStatus, fn ($q) => $q->whereHas('currentStatus', fn ($s) => $s->where('name', $activeStatus)))
+            ->when($request->query('unit_id'), function ($q) use ($request) {
+                abort_unless(Unit::whereKey($request->query('unit_id'))->exists(), 404);
+                $q->where('unit_id', $request->query('unit_id'));
+            })
+            ->when($request->query('report_type_id'), function ($q) use ($request) {
+                abort_unless(ReportType::whereKey($request->query('report_type_id'))->exists(), 404);
+                $q->where('report_type_id', $request->query('report_type_id'));
+            })
+            ->when($request->query('date_from'), fn ($q) => $q->whereDate('submitted_at', '>=', $request->query('date_from')))
+            ->when($request->query('date_to'), fn ($q) => $q->whereDate('submitted_at', '<=', $request->query('date_to')))
+            ->orderBy('submitted_at', $sort)
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('command.reports', [
+            'sitreps' => $sitreps,
+            'statuses' => self::QUEUE_STATUSES,
+            'units' => Unit::orderBy('name')->get(),
+            'reportTypes' => ReportType::where('is_active', true)->orderBy('name')->get(),
+            'filters' => $request->only(['q', 'status', 'unit_id', 'report_type_id', 'date_from', 'date_to', 'sort']),
+        ]);
+    }
 }
