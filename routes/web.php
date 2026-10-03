@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\Command\DashboardController as CommandDashboardController;
 use App\Http\Controllers\Command\SitrepController as CommandSitrepController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Reporting\DashboardController;
 use App\Http\Controllers\Reporting\SitrepController;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
 
 Route::get('/dashboard', function () {
     if (auth()->user()->hasRole('reporting-personnel')) {

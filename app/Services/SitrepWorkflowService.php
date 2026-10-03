@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class SitrepWorkflowService
 {
+    public function __construct(private NotificationService $notifications) {}
+
     /**
      * Create a SITREP in Draft status (with reference number + audit entry).
      * If $action is 'submit', immediately transition Draft -> Submitted.
@@ -87,7 +89,32 @@ class SitrepWorkflowService
         $sitrep->save();
         $this->log($sitrep, $user, 'status_changed', $from->name, $to->name, $remarks);
 
+        $this->notify($sitrep, $from->name, $to->name, $remarks);
+
         return $sitrep;
+    }
+
+    private function notify(Sitrep $sitrep, string $from, string $to, ?string $remarks): void
+    {
+        $author = User::find($sitrep->created_by);
+
+        match ("{$from}->{$to}") {
+            'Draft->Submitted', 'Returned for Correction->Submitted' => $this->notifications->notifyRole(
+                'command-center',
+                'new_sitrep',
+                "New SITREP {$sitrep->reference_number} received from {$sitrep->unit->name}."
+            ),
+            'Under Review->Validated' => $author && $this->notifications->notifyUser(
+                $author, 'sitrep_validated',
+                "SITREP {$sitrep->reference_number} has been validated."
+            ),
+            'Under Review->Returned for Correction' => $author && $this->notifications->notifyUser(
+                $author, 'sitrep_returned',
+                "SITREP {$sitrep->reference_number} was returned for correction."
+                .($remarks ? " Remarks: {$remarks}" : '')
+            ),
+            default => null,
+        };
     }
 
     /**

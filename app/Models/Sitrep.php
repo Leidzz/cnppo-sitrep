@@ -39,11 +39,17 @@ class Sitrep extends Model
         'reviewed_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<Unit, $this>
+     */
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
     }
 
+    /**
+     * @return BelongsTo<ReportType, $this>
+     */
     public function reportType(): BelongsTo
     {
         return $this->belongsTo(ReportType::class);
@@ -57,26 +63,41 @@ class Sitrep extends Model
         return $this->belongsTo(Status::class, 'current_status_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    /**
+     * @return HasMany<SitrepPersonnel, $this>
+     */
     public function personnel(): HasMany
     {
         return $this->hasMany(SitrepPersonnel::class);
     }
 
+    /**
+     * @return HasMany<Attachment, $this>
+     */
     public function attachments(): HasMany
     {
         return $this->hasMany(Attachment::class);
     }
 
+    /**
+     * @return HasMany<AuditLog, $this>
+     */
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class);

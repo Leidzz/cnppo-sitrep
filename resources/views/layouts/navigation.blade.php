@@ -20,6 +20,21 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+
+                    {{-- Notifications bell with unread count --}}
+    @php
+        $unreadCount = auth()->user()->notifications()->where('is_read', false)->count();
+    @endphp
+    <a href="{{ route('notifications.index') }}" class="relative me-3 inline-flex items-center p-2 text-gray-500 hover:text-gray-700" aria-label="Notifications">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0112 21a8.967 8.967 0 01-8.396-6.228 23.85 23.85 0 005.454 1.31m5.196-13.31a5.97 5.97 0 00-2.216 0M12 3a5.97 5.97 0 012.216.396A5.975 5.975 0 0012 6c-1.675 0-3.197-.61-4.216-1.604A5.97 5.97 0 0112 3zm-7 9a7 7 0 1114 0c0 2.485-.746 4.79-2.02 6.718-.327.472-.648.964-.96 1.466a.75.75 0 01-1.27 0c-.312-.502-.633-.994-.96-1.466A11.455 11.455 0 015 12z"/>
+        </svg>
+        @if ($unreadCount > 0)
+            <span class="absolute -top-1 -right-1 inline-flex items-center justify-center h-5 min-w-[20px] px-1 rounded-full bg-red-600 text-white text-xs font-bold">
+                {{ $unreadCount }}
+            </span>
+        @endif
+    </a>
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
