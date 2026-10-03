@@ -31,9 +31,9 @@
                 </p>
             </div>
 
-            {{-- PUT method required by Laravel for updates; the report type
-                 travels as a hidden input so validation still sees it --}}
-            <form method="POST" action="{{ route('reporting.sitreps.update', $sitrep) }}">
+            {{-- PUT method required by Laravel for updates; enctype REQUIRED
+                 for file uploads; report type travels as a hidden input --}}
+            <form method="POST" action="{{ route('reporting.sitreps.update', $sitrep) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="report_type_id" value="{{ $sitrep->report_type_id }}">
@@ -155,6 +155,63 @@
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[44px]">
                         @error('location_description') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
+                </div>
+
+                {{-- Photo documentation: attach ADDITIONAL photos to this draft.
+                     File inputs cannot be prefilled, so existing photos are not
+                     shown here — they remain attached and appear on the detail page. --}}
+                <div class="mt-8" x-data="{
+                    previews: [],
+                    maxPhotos: 5,
+
+                    handleFiles(event) {
+                        // No syncInput() here — the input already holds these
+                        // files natively; FileReader.onload is async, so
+                        // rebuilding now would wipe them. Rebuild only on REMOVE.
+                        [...event.target.files].forEach((file) => {
+                            if (this.previews.length >= this.maxPhotos) return;
+                            const reader = new FileReader();
+                            reader.onload = (e) => this.previews.push({ file, url: e.target.result });
+                            reader.readAsDataURL(file);
+                        });
+                    },
+
+                    remove(index) {
+                        this.previews.splice(index, 1);
+                        this.syncInput();
+                    },
+
+                    syncInput() {
+                        const dt = new DataTransfer();
+                        this.previews.forEach((p) => dt.items.add(p.file));
+                        this.$refs.photosInput.files = dt.files;
+                    },
+                }">
+                    <h3 class="text-lg font-semibold text-gray-900">Add Photos</h3>
+                    <p class="mt-1 text-sm text-gray-500">Attach additional photos. JPEG, PNG, or WebP · max 5 MB each · up to 5 per save. Existing photos stay attached.</p>
+
+                    <label for="photos" class="mt-4 flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50">
+                        Choose Photos
+                        <input id="photos" type="file" name="photos[]" multiple
+                               accept="image/jpeg,image/png,image/webp"
+                               x-ref="photosInput"
+                               @change="handleFiles($event)"
+                               class="sr-only">
+                    </label>
+
+                    <div class="mt-4 grid grid-cols-3 gap-2" x-show="previews.length > 0" x-cloak>
+                        <template x-for="(p, i) in previews" :key="i">
+                            <div class="relative">
+                                <img :src="p.url" alt="photo preview" class="h-24 w-full object-cover rounded-lg border border-gray-200">
+                                <button type="button" @click="remove(i)"
+                                        class="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-red-600 text-white text-sm font-bold shadow"
+                                        aria-label="Remove photo">×</button>
+                            </div>
+                        </template>
+                    </div>
+
+                    @error('photos') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                    @error('photos.*') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3">
