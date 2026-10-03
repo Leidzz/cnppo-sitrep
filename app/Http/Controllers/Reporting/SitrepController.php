@@ -119,8 +119,10 @@ class SitrepController extends Controller
     /**
      * Update a draft / returned report. All status changes go through
      * the workflow service (rule 7) — this controller only gathers input.
+     * Photos chosen here are attached after the update (the SITREP row
+     * already exists, so no ordering problem).
      */
-    public function update(Sitrep $sitrep, StoreSitrepRequest $request, SitrepWorkflowService $workflow): RedirectResponse
+    public function update(Sitrep $sitrep, StoreSitrepRequest $request, SitrepWorkflowService $workflow, AttachmentService $attachments): RedirectResponse
     {
         $this->authorize('update', $sitrep);
 
@@ -137,6 +139,10 @@ class SitrepController extends Controller
             ]),
             action: $request->string('action')->toString(),
         );
+
+        if ($request->hasFile('photos')) {
+            $attachments->storeForSitrep($sitrep, $request->user(), $request->file('photos'));
+        }
 
         $message = $request->input('action') === 'submit'
             ? "SITREP {$sitrep->reference_number} submitted."

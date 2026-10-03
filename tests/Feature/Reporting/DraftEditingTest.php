@@ -11,6 +11,8 @@ use Database\Seeders\RoleSeeder;
 use Database\Seeders\StatusSeeder;
 use Database\Seeders\UnitSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -117,4 +119,18 @@ it('resubmits a returned report after correction', function () {
     $sitrep->refresh();
     expect($sitrep->currentStatus->name)->toBe('Submitted');
     expect(AuditLog::where('remarks', 'Corrected and resubmitted by reporting personnel.')->get())->toHaveCount(1);
+});
+
+it('attaches photos when updating a draft', function () {
+    Storage::fake('sitrep_photos');
+    [$owner, $sitrep] = makeEditableSitrep();
+
+    $this->actingAs($owner)->put(route('reporting.sitreps.update', $sitrep), [
+        'report_type_id' => $sitrep->report_type_id,
+        'action' => 'draft',
+        'dynamic_fields' => ['what' => 'With photo'],
+        'photos' => [UploadedFile::fake()->image('draft-photo.jpg', 600, 400)->size(200)],
+    ])->assertRedirect(route('reporting.sitreps.show', $sitrep));
+
+    expect($sitrep->refresh()->attachments)->toHaveCount(1);
 });
