@@ -54,7 +54,12 @@ class SitrepWorkflowService
      */
     public function transition(Sitrep $sitrep, string $toStatusName, User $user, ?string $remarks = null): Sitrep
     {
-        $from = $sitrep->currentStatus;
+        // FRESH read via the relation query. Property access
+        // ($sitrep->currentStatus) can return a STALE cached copy when this
+        // model already transitioned earlier in the same request — e.g.
+        // review() claims 'Under Review' first, then decides. The gate
+        // must always validate against what the database actually says.
+        $from = $sitrep->currentStatus()->firstOrFail();
         $to = Status::where('name', $toStatusName)->firstOrFail();
 
         $isAllowed = StatusTransition::query()
@@ -86,7 +91,7 @@ class SitrepWorkflowService
     }
 
     /**
-     * NEW (Part D2) — Update an editable SITREP (Draft or Returned for Correction).
+     * Update an editable SITREP (Draft or Returned for Correction).
      *
      * - Guards the editable state (defense in depth on top of the policy)
      * - Writes an audit entry for the edit itself
@@ -120,6 +125,37 @@ class SitrepWorkflowService
             }
 
             return $sitrep;
+        });
+    }
+
+    /**
+     * Record a review decision: 'validated' or 'returned'.
+     *
+     * Maps the decision to its workflow status, stores the reviewer's
+     * remarks on the report, then routes through transition() so the
+     * status_transitions role check + audit entry still apply exactly
+     * once per move (rule 7). Policy + Form Request have already gated access.
+     */
+    public function review(Sitrep $sitrep, User $user, string $decision, ?string $remarks = null): Sitrep
+    {
+        return DB::transaction(function () use ($sitrep, $user, $decision, $remarks) {
+            $statusName = match ($decision) {
+                'validated' => 'Validated',
+                'returned' => 'Returned for Correction',
+                default => throw new \InvalidArgumentException("Unknown review decision [{$decision}]."),
+            };
+
+            // The seeded workflow requires Submitted -> Under Review before
+            // any decision. Claim the review first, then decide.
+            if ($sitrep->currentStatus->name === 'Submitted') {
+                $this->transition($sitrep, 'Under Review', $user, 'Review started.');
+            }
+
+            $sitrep->reviewed_by = $user->id;
+            $sitrep->review_remarks = $remarks;
+            $sitrep->save();
+
+            return $this->transition($sitrep, $statusName, $user, $remarks);
         });
     }
 

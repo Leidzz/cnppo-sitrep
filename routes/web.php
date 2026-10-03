@@ -67,6 +67,9 @@ Route::middleware(['auth', 'verified', 'role:command-center'])->group(function (
 
     Route::get('/command/sitreps/{sitrep}', [CommandSitrepController::class, 'show'])
         ->name('command.sitreps.show');
+
+    Route::post('/command/sitreps/{sitrep}/decide', [CommandSitrepController::class, 'decide'])
+        ->name('command.sitreps.decide');
 });
 
 require __DIR__.'/auth.php';

@@ -109,8 +109,46 @@
                 @endif
             </section>
 
+            {{-- NEW (Phase 3 Step 2): Review actions — rendered ONLY for
+                 command-center/admin on reviewable reports. Officers never
+                 see this section; the Form Request re-checks on POST anyway. --}}
+            @can('review', $sitrep)
+                <section class="rounded-lg border-2 border-gray-900 bg-white p-4">
+                    <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">Review Decision</h3>
+
+                    <form method="POST" action="{{ route('command.sitreps.decide', $sitrep) }}" class="mt-4 space-y-4">
+                        @csrf
+
+                        <div>
+                            <label for="remarks" class="block text-sm font-medium text-gray-700">
+                                Reviewer Remarks <span class="text-gray-400 font-normal">(required if returning)</span>
+                            </label>
+                            <textarea id="remarks" name="remarks" rows="3"
+                                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ old('remarks') }}</textarea>
+                            @error('remarks') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div class="flex flex-col-reverse sm:flex-row gap-3">
+                            <button type="submit" name="decision" value="returned"
+                                    class="min-h-[44px] px-6 py-3 rounded-lg border border-red-300 bg-white text-red-700 font-semibold hover:bg-red-50">
+                                Return for Correction
+                            </button>
+                            <button type="submit" name="decision" value="validated"
+                                    class="min-h-[44px] px-6 py-3 rounded-lg bg-green-700 text-white font-semibold hover:bg-green-800">
+                                Validate Report
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            @endcan
+
+            {{-- Role-aware back link: officers go to My Reports, reviewers to the queue --}}
             <div class="pt-2">
-                <a href="{{ route('reporting.sitreps.index') }}" class="text-sm font-semibold text-blue-700">← Back to My Reports</a>
+                @if(auth()->user()->hasRole('reporting-personnel'))
+                    <a href="{{ route('reporting.sitreps.index') }}" class="text-sm font-semibold text-blue-700">← Back to My Reports</a>
+                @else
+                    <a href="{{ route('command.incoming') }}" class="text-sm font-semibold text-blue-700">← Back to Incoming Queue</a>
+                @endif
             </div>
         </div>
     </div>

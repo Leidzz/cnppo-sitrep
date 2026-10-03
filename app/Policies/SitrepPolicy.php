@@ -41,4 +41,15 @@ class SitrepPolicy
         return $user->id === $sitrep->created_by
             && in_array($sitrep->currentStatus->name, ['Draft', 'Returned for Correction']);
     }
+
+    /**
+     * NEW (Phase 3) — Who may REVIEW (validate / return) a SITREP:
+     * command center or admin, and ONLY while the report awaits a
+     * decision. Validated/Returned reports are final for review purposes.
+     */
+    public function review(User $user, Sitrep $sitrep): bool
+    {
+        return $user->hasAnyRole(['command-center', 'administrator'])
+            && in_array($sitrep->currentStatus->name, ['Submitted', 'Under Review']);
+    }
 }

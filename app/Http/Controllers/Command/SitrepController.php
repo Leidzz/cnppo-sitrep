@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Command;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReviewSitrepRequest;
 use App\Models\ReportType;
 use App\Models\Sitrep;
 use App\Models\Unit;
+use App\Services\SitrepWorkflowService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -51,7 +54,7 @@ class SitrepController extends Controller
 
     /**
      * Read-only detail for reviewers. Reuses the SAME view as officers —
-     * the review actions arrive in Step 2 via the review policy.
+     * the review action section renders via @can('review', ...) in Blade.
      */
     public function show(Sitrep $sitrep): View
     {
@@ -60,5 +63,29 @@ class SitrepController extends Controller
         $sitrep->load(['reportType.templateFields', 'unit', 'creator', 'reviewer', 'currentStatus', 'attachments']);
 
         return view('reporting.sitreps.show', compact('sitrep'));
+    }
+
+    /**
+     * Record the review decision.
+     * The Form Request already authorized ('review' policy) and validated
+     * (remarks required when returning). The service performs the
+     * transition + audit; this controller only gathers input.
+     */
+    public function decide(Sitrep $sitrep, ReviewSitrepRequest $request, SitrepWorkflowService $workflow): RedirectResponse
+    {
+        $workflow->review(
+            sitrep: $sitrep,
+            user: $request->user(),
+            decision: $request->string('decision')->toString(),
+            remarks: $request->input('remarks'),
+        );
+
+        $message = $request->input('decision') === 'validated'
+            ? "SITREP {$sitrep->reference_number} validated."
+            : "SITREP {$sitrep->reference_number} returned for correction.";
+
+        return redirect()
+            ->route('command.incoming')
+            ->with('status', $message);
     }
 }
