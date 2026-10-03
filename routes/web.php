@@ -13,9 +13,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
-
 Route::get('/dashboard', function () {
     if (auth()->user()->hasRole('reporting-personnel')) {
         return redirect()->route('reporting.dashboard');
@@ -33,6 +30,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Notifications: auth (this group); content is user-scoped in the controller
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+
     // Photo serving: auth (this group) + parent-SITREP policy (in controller)
     Route::get('/attachments/{attachment}/file', [AttachmentController::class, 'show'])
         ->name('attachments.show');
@@ -48,13 +49,11 @@ Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(funct
     Route::post('/reporting/sitreps', [SitrepController::class, 'store'])
         ->name('reporting.sitreps.store');
 
-    // Part D1: My Reports list + View Detail
     Route::get('/reporting/sitreps', [SitrepController::class, 'index'])
         ->name('reporting.sitreps.index');
     Route::get('/reporting/sitreps/{sitrep}', [SitrepController::class, 'show'])
         ->name('reporting.sitreps.show');
 
-    // Part D2: continue editing drafts
     Route::get('/reporting/sitreps/{sitrep}/edit', [SitrepController::class, 'edit'])
         ->name('reporting.sitreps.edit');
     Route::put('/reporting/sitreps/{sitrep}', [SitrepController::class, 'update'])
@@ -77,6 +76,12 @@ Route::middleware(['auth', 'verified', 'role:command-center'])->group(function (
 
     Route::get('/command/reports', [CommandSitrepController::class, 'reports'])
         ->name('command.reports.index');
+
+    Route::get('/command/map', [CommandSitrepController::class, 'map'])
+        ->name('command.map');
+
+    Route::get('/command/map/data', [CommandSitrepController::class, 'mapData'])
+        ->name('command.map.data');
 });
 
 require __DIR__.'/auth.php';

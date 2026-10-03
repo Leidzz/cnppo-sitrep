@@ -31,6 +31,10 @@
                    class="min-h-[44px] inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-700 hover:bg-gray-50">
                     All Reports
                 </a>
+                <a href="{{ route('command.map') }}"
+                   class="min-h-[44px] inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-700 hover:bg-gray-50">
+                    Map
+                </a>
             </div>
 
             <h2 class="mt-10 text-lg font-semibold text-gray-900">Latest Incoming</h2>

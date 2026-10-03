@@ -8,6 +8,7 @@ use App\Models\ReportType;
 use App\Models\Sitrep;
 use App\Models\Unit;
 use App\Services\SitrepWorkflowService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -134,5 +135,49 @@ class SitrepController extends Controller
             'reportTypes' => ReportType::where('is_active', true)->orderBy('name')->get(),
             'filters' => $request->only(['q', 'status', 'unit_id', 'report_type_id', 'date_from', 'date_to', 'sort']),
         ]);
+    }
+
+    /**
+     * Map view (spec Section 10): shell page; markers load via mapData().
+     */
+    public function map(): View
+    {
+        return view('command.map', [
+            'statuses' => self::QUEUE_STATUSES,
+        ]);
+    }
+
+    /**
+     * JSON feed of mappable reports. Only records WITH coordinates appear.
+     * Neutral fields only — the popup says 'Location captured (device)',
+     * never 'verified'.
+     */
+    public function mapData(Request $request): JsonResponse
+    {
+        $activeStatus = $request->query('status');
+        abort_unless(is_null($activeStatus) || in_array($activeStatus, self::QUEUE_STATUSES), 404);
+
+        $markers = Sitrep::query()
+            ->with(['unit', 'reportType', 'currentStatus'])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->whereHas('currentStatus', fn ($q) => $q->whereIn('name', self::QUEUE_STATUSES))
+            ->when($activeStatus, fn ($q) => $q->whereHas('currentStatus', fn ($s) => $s->where('name', $activeStatus)))
+            ->latest('submitted_at')
+            ->limit(500)   // hard cap: keeps the map responsive; flagged for pagination if CNPPO needs more
+            ->get()
+            ->map(fn (Sitrep $s) => [
+                'id' => $s->id,
+                'reference' => $s->reference_number,
+                'unit' => $s->unit->name,
+                'type' => $s->reportType->name,
+                'status' => $s->currentStatus->name,
+                'lat' => $s->latitude,
+                'lng' => $s->longitude,
+                'captured_at' => $s->location_captured_at?->format('M d, Y g:i A'),
+                'url' => route('command.sitreps.show', $s),
+            ]);
+
+        return response()->json(['markers' => $markers]);
     }
 }
