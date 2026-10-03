@@ -97,4 +97,53 @@ class SitrepController extends Controller
 
         return view('reporting.sitreps.show', compact('sitrep'));
     }
+
+    /**
+     * Edit form for a draft / returned report (Part D2). The report type
+     * is LOCKED — changing the template mid-draft would orphan field data.
+     */
+    public function edit(Sitrep $sitrep): View
+    {
+        $this->authorize('update', $sitrep);
+
+        $reportTypes = ReportType::where('is_active', true)
+            ->with(['templateFields' => fn ($q) => $q->orderBy('sort_order')])
+            ->get();
+
+        return view('reporting.sitreps.edit', [
+            'sitrep' => $sitrep->load('currentStatus'),
+            'reportTypes' => $reportTypes,
+        ]);
+    }
+
+    /**
+     * Update a draft / returned report. All status changes go through
+     * the workflow service (rule 7) — this controller only gathers input.
+     */
+    public function update(Sitrep $sitrep, StoreSitrepRequest $request, SitrepWorkflowService $workflow): RedirectResponse
+    {
+        $this->authorize('update', $sitrep);
+
+        $workflow->updateDraft(
+            sitrep: $sitrep,
+            user: $request->user(),
+            dynamicFields: $request->input('dynamic_fields', []),
+            location: $request->safe()->only([
+                'latitude',
+                'longitude',
+                'gps_accuracy_meters',
+                'location_captured_at',
+                'location_description',
+            ]),
+            action: $request->string('action')->toString(),
+        );
+
+        $message = $request->input('action') === 'submit'
+            ? "SITREP {$sitrep->reference_number} submitted."
+            : "SITREP {$sitrep->reference_number} draft updated.";
+
+        return redirect()
+            ->route('reporting.sitreps.show', $sitrep)
+            ->with('status', $message);
+    }
 }

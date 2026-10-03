@@ -38,11 +38,17 @@ Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(funct
     Route::post('/reporting/sitreps', [SitrepController::class, 'store'])
         ->name('reporting.sitreps.store');
 
-    // NEW — Part D1: My Reports list + View Detail
+    // Part D1: My Reports list + View Detail
     Route::get('/reporting/sitreps', [SitrepController::class, 'index'])
         ->name('reporting.sitreps.index');
     Route::get('/reporting/sitreps/{sitrep}', [SitrepController::class, 'show'])
         ->name('reporting.sitreps.show');
+
+    // NEW — Part D2: continue editing drafts
+    Route::get('/reporting/sitreps/{sitrep}/edit', [SitrepController::class, 'edit'])
+        ->name('reporting.sitreps.edit');
+    Route::put('/reporting/sitreps/{sitrep}', [SitrepController::class, 'update'])
+        ->name('reporting.sitreps.update');
 });
 
 require __DIR__.'/auth.php';

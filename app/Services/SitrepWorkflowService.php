@@ -85,6 +85,44 @@ class SitrepWorkflowService
         return $sitrep;
     }
 
+    /**
+     * NEW (Part D2) — Update an editable SITREP (Draft or Returned for Correction).
+     *
+     * - Guards the editable state (defense in depth on top of the policy)
+     * - Writes an audit entry for the edit itself
+     * - On submit: performs the correct transition (Draft -> Submitted, or
+     *   Returned for Correction -> Submitted after corrections) — still
+     *   validated against status_transitions inside transition()
+     */
+    public function updateDraft(Sitrep $sitrep, User $user, array $dynamicFields, array $location, string $action): Sitrep
+    {
+        return DB::transaction(function () use ($sitrep, $user, $dynamicFields, $location, $action) {
+            $statusName = $sitrep->currentStatus->name;
+
+            abort_unless(
+                in_array($statusName, ['Draft', 'Returned for Correction']),
+                403,
+                'Only drafts and returned reports may be edited.'
+            );
+
+            $location = array_filter($location, fn ($v) => $v !== null && $v !== '');
+
+            $sitrep->update(array_merge(['dynamic_fields' => $dynamicFields], $location));
+
+            $this->log($sitrep, $user, 'updated', $statusName, $statusName, 'Report content updated.');
+
+            if ($action === 'submit') {
+                $remarks = $statusName === 'Returned for Correction'
+                    ? 'Corrected and resubmitted by reporting personnel.'
+                    : 'Draft submitted by reporting personnel.';
+
+                $this->transition($sitrep, 'Submitted', $user, $remarks);
+            }
+
+            return $sitrep;
+        });
+    }
+
     private function statusId(string $name): int
     {
         return Status::where('name', $name)->firstOrFail()->id;

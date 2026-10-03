@@ -10,9 +10,17 @@ class StoreSitrepRequest extends FormRequest
 {
     /**
      * Authorize via the policy — validation and permission in one door.
+     *
+     * Context-aware: on update routes a {sitrep} model is bound, so we
+     * check the 'update' policy (owner + editable state). On create routes
+     * there's no model, so we check 'create'.
      */
     public function authorize(): bool
     {
+        if ($sitrep = $this->route('sitrep')) {
+            return $this->user()->can('update', $sitrep);
+        }
+
         return $this->user()->can('create', Sitrep::class);
     }
 
