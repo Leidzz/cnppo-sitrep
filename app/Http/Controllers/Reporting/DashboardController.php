@@ -39,6 +39,22 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Officer's own last-7-day submission activity (for the trend chart)
+        $trendRaw = $user->sitreps()
+            ->whereNotNull('submitted_at')
+            ->where('submitted_at', '>=', now()->subDays(6)->startOfDay())
+            ->selectRaw('DATE(submitted_at) as day, count(*) as total')
+            ->groupBy('day')
+            ->pluck('total', 'day');
+
+        $trendLabels = [];
+        $trendData = [];
+        foreach (range(6, 0) as $i) {
+            $d = now()->subDays($i)->toDateString();
+            $trendLabels[] = now()->subDays($i)->format('M d');
+            $trendData[] = (int) ($trendRaw[$d] ?? 0);
+        }
+
         // Card labels: keep officer-facing names, shorten the long one
         $labels = [
             'Draft' => 'Draft',
@@ -53,6 +69,8 @@ class DashboardController extends Controller
             'counts' => $counts,
             'recent' => $recent,
             'labels' => $labels,
+            'trendLabels' => $trendLabels,
+            'trendData' => $trendData,
         ]);
     }
 }

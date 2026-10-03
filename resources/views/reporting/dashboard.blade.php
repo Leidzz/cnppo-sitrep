@@ -1,72 +1,103 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="text-xl font-semibold leading-tight text-gray-800">
-            {{ __('Dashboard') }}
-        </h2>
+        <h2 class="text-lg font-semibold text-white truncate">Dashboard</h2>
     </x-slot>
 
+    @push('head')
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    @endpush
+
     <div class="px-4 py-6 sm:px-6 lg:px-8">
-        <div class="max-w-3xl mx-auto">
+        <div class="max-w-[1400px] mx-auto">
 
-            {{-- Flash message after creating/submitting/updating a SITREP --}}
-            @if (session('status'))
-                <div class="mb-6 rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-800">
-                    {{ session('status') }}
-                </div>
-            @endif
+            <x-flash />
 
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
-                Welcome, {{ auth()->user()->name }}
-            </h1>
-            <p class="mt-2 text-base text-gray-600">
-                {{ auth()->user()->unit?->name ?? 'No unit assigned' }}
-            </p>
+            <h1 class="text-xl font-bold text-gray-900">Welcome, {{ auth()->user()->name }}</h1>
+            <p class="mt-1 text-sm text-gray-500">{{ auth()->user()->unit?->name ?? 'No unit assigned' }}</p>
 
-            <div class="mt-6 flex flex-wrap gap-3">
+            <div class="mt-5 flex flex-wrap gap-3">
                 <a href="{{ route('reporting.sitreps.create') }}"
-                   class="min-h-[44px] inline-flex items-center px-6 py-3 rounded-lg bg-blue-700 text-white text-base font-semibold shadow hover:bg-blue-800">
-                    + Create SITREP
+                   class="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
+                    <x-icon name="plus" class="w-4 h-4" /> Create SITREP
                 </a>
                 <a href="{{ route('reporting.sitreps.index') }}"
-                   class="min-h-[44px] inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-700 hover:bg-gray-50">
+                   class="inline-flex items-center justify-center gap-2 min-h-[44px] px-6 py-3 rounded-lg text-sm font-semibold border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 transition">
                     My Reports
                 </a>
             </div>
 
-            {{-- Status counts: 2 columns on mobile, 5 on desktop.
-                 Every card links to the filtered list — count to drill-down
-                 in one tap. Counts come from the controller's grouped query. --}}
-            <div class="mt-8 grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {{-- KPI cards --}}
+            @php
+                $tintFor = ['Draft' => 'gray', 'Submitted' => 'blue', 'Under Review' => 'amber', 'Validated' => 'green', 'Returned for Correction' => 'red'];
+                $iconFor = ['Draft' => 'file', 'Submitted' => 'doc', 'Under Review' => 'clock', 'Validated' => 'check', 'Returned for Correction' => 'return'];
+            @endphp
+            <div class="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 @foreach ($statuses as $status)
-                    <a href="{{ route('reporting.sitreps.index', ['status' => $status->name]) }}"
-                       class="rounded-lg border border-gray-200 bg-white p-4 hover:border-blue-400 transition">
-                        <p class="text-2xl font-bold text-gray-900">{{ $counts[$status->id] ?? 0 }}</p>
-                        <p class="mt-1 text-xs font-medium text-gray-500">{{ $labels[$status->name] ?? $status->name }}</p>
-                    </a>
+                    <div class="anim-rise" style="animation-delay: {{ $loop->index * 70 }}ms">
+                        <x-stat-card
+                            :label="$labels[$status->name] ?? $status->name"
+                            :count="$counts[$status->id] ?? 0"
+                            :icon="$iconFor[$status->name]"
+                            :tint="$tintFor[$status->name]"
+                            :href="route('reporting.sitreps.index', ['status' => $status->name])" />
+                    </div>
                 @endforeach
             </div>
 
-            {{-- Recent reports (max 5, from controller) --}}
-            <h2 class="mt-10 text-lg font-semibold text-gray-900">Recent Reports</h2>
+            {{-- Personal submission trend (Design v3) --}}
+            <div class="anim-rise mt-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm" style="animation-delay: 350ms">
+                <h3 class="text-sm font-semibold text-gray-900">Your Submissions — Last 7 Days</h3>
+                <div class="mt-3 h-56"><canvas id="trend"></canvas></div>
+            </div>
+
+            <h2 class="mt-8 text-base font-semibold text-gray-900">Recent Reports</h2>
             <div class="mt-3 space-y-2">
                 @forelse ($recent as $sitrep)
                     <a href="{{ route('reporting.sitreps.show', $sitrep) }}"
-                       class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 hover:border-blue-400 transition">
+                       class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-blue-400 hover:shadow-sm transition">
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-gray-900 truncate">{{ $sitrep->reference_number }}</p>
                             <p class="text-xs text-gray-500">{{ $sitrep->reportType->name }} · {{ $sitrep->created_at->format('M d, g:i A') }}</p>
                         </div>
-                        <span class="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-700">
-                            {{ $sitrep->currentStatus->name }}
-                        </span>
+                        <x-status-badge :status="$sitrep->currentStatus->name" class="shrink-0" />
                     </a>
                 @empty
-                    <p class="text-sm text-gray-500 rounded-lg border border-dashed border-gray-300 p-6 text-center">
+                    <x-empty-state>
                         No reports yet — create your first SITREP.
-                    </p>
+                        <x-slot name="action">
+                            <a href="{{ route('reporting.sitreps.create') }}" class="mt-3 inline-block text-sm font-semibold text-blue-700">Create SITREP →</a>
+                        </x-slot>
+                    </x-empty-state>
                 @endforelse
             </div>
 
         </div>
     </div>
+
+    <script>
+        window.addEventListener('load', () => {
+            new Chart(document.getElementById('trend'), {
+                type: 'line',
+                data: {
+                    labels: @json($trendLabels),
+                    datasets: [{
+                        label: 'Submitted',
+                        data: @json($trendData),
+                        borderColor: '#2563EB',
+                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                        fill: true, tension: 0.35, borderWidth: 2,
+                        pointRadius: 3, pointBackgroundColor: '#2563EB',
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#64748B', font: { size: 11 } } },
+                        y: { beginAtZero: true, ticks: { precision: 0, color: '#64748B', font: { size: 11 } }, grid: { color: '#F1F5F9' } },
+                    },
+                },
+            });
+        });
+    </script>
 </x-app-layout>
