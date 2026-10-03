@@ -199,13 +199,17 @@
                     maxPhotos: 5,
 
                     handleFiles(event) {
+                        // NOTE: no syncInput() here — the file input already
+                        // contains these files natively. FileReader.onload is
+                        // async, so previews isn't populated yet at this point;
+                        // rebuilding now would WIPE the just-selected files.
+                        // Rebuilding happens only after REMOVE (see below).
                         [...event.target.files].forEach((file) => {
                             if (this.previews.length >= this.maxPhotos) return;
                             const reader = new FileReader();
                             reader.onload = (e) => this.previews.push({ file, url: e.target.result });
                             reader.readAsDataURL(file);
                         });
-                        this.syncInput();
                     },
 
                     remove(index) {
@@ -215,7 +219,8 @@
 
                     // Rebuild the file input from what remains in previews, so
                     // removed photos are truly NOT submitted (input.files is
-                    // read-only; DataTransfer is the standard workaround)
+                    // read-only; DataTransfer is the standard workaround).
+                    // Safe here because previews is fully populated by now.
                     syncInput() {
                         const dt = new DataTransfer();
                         this.previews.forEach((p) => dt.items.add(p.file));
