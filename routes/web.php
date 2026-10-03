@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\Command\DashboardController as CommandDashboardController;
+use App\Http\Controllers\Command\SitrepController as CommandSitrepController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Reporting\DashboardController;
 use App\Http\Controllers\Reporting\SitrepController;
@@ -13,6 +15,10 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     if (auth()->user()->hasRole('reporting-personnel')) {
         return redirect()->route('reporting.dashboard');
+    }
+
+    if (auth()->user()->hasRole('command-center')) {
+        return redirect()->route('command.dashboard');
     }
 
     return view('dashboard');
@@ -44,11 +50,23 @@ Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(funct
     Route::get('/reporting/sitreps/{sitrep}', [SitrepController::class, 'show'])
         ->name('reporting.sitreps.show');
 
-    // NEW — Part D2: continue editing drafts
+    // Part D2: continue editing drafts
     Route::get('/reporting/sitreps/{sitrep}/edit', [SitrepController::class, 'edit'])
         ->name('reporting.sitreps.edit');
     Route::put('/reporting/sitreps/{sitrep}', [SitrepController::class, 'update'])
         ->name('reporting.sitreps.update');
+});
+
+// Command Center section — province-wide review
+Route::middleware(['auth', 'verified', 'role:command-center'])->group(function () {
+    Route::get('/command/dashboard', CommandDashboardController::class)
+        ->name('command.dashboard');
+
+    Route::get('/command/incoming', [CommandSitrepController::class, 'incoming'])
+        ->name('command.incoming');
+
+    Route::get('/command/sitreps/{sitrep}', [CommandSitrepController::class, 'show'])
+        ->name('command.sitreps.show');
 });
 
 require __DIR__.'/auth.php';
