@@ -62,7 +62,7 @@ it('returns only location-captured reports as markers', function () {
         ->not->toContain($draft->reference_number);
 
     $marker = collect($response->json('markers'))->first();
-    expect($marker)->toHaveKeys(['reference', 'unit', 'type', 'status', 'lat', 'lng', 'captured_at', 'url']);
+    expect($marker)->toHaveKeys(['reference', 'unit', 'type', 'status', 'lat', 'lng', 'accuracy', 'captured_at', 'url']);
 });
 
 it('filters markers by status', function () {

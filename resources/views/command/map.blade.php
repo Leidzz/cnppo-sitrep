@@ -6,6 +6,10 @@
     @push('head')
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        {{-- Marker clustering: nearby/overlapping markers collapse into a numbered badge --}}
+        <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     @endpush
 
     <div x-data="{
@@ -21,7 +25,9 @@
                 maxZoom: 19,
                 attribution: '© OpenStreetMap contributors',
             }).addTo(this.map);
-            this.layer = L.layerGroup().addTo(this.map);
+            // Clustering: 20 reports at one checkpoint show as ONE badge
+            // with a count, instead of stacked invisible pins.
+            this.layer = L.markerClusterGroup().addTo(this.map);
             this.load(null);
         },
 
@@ -45,6 +51,20 @@
                         Location captured (device): ${m.captured_at ?? '—'}<br>
                         <a href='${m.url}'>Open report</a>
                     </div>`);
+
+                // Accuracy circle: honest uncertainty. A ±150m desktop fix
+                // renders as a ~300m circle, NOT a falsely-precise pin.
+                if (m.accuracy) {
+                    L.circle([m.lat, m.lng], {
+                        radius: m.accuracy,
+                        color: '#3b82f6',
+                        weight: 1,
+                        opacity: 0.5,
+                        fillColor: '#3b82f6',
+                        fillOpacity: 0.08,
+                    }).addTo(this.layer);
+                }
+
                 bounds.push([m.lat, m.lng]);
             }
             if (bounds.length > 0) this.map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });

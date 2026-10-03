@@ -39,10 +39,20 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Card labels: keep officer-facing names, shorten the long one
+        $labels = [
+            'Draft' => 'Draft',
+            'Submitted' => 'Submitted',
+            'Under Review' => 'Under Review',
+            'Validated' => 'Validated',
+            'Returned for Correction' => 'Returned',
+        ];
+
         return view('reporting.dashboard', [
             'statuses' => $statuses,
             'counts' => $counts,
             'recent' => $recent,
+            'labels' => $labels,
         ]);
     }
 }

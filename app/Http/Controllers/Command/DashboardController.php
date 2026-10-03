@@ -12,7 +12,7 @@ class DashboardController extends Controller
 {
     /**
      * Command Center dashboard — province-wide counts (spec Section 4:
-     * counts from actual records) + latest incoming.
+     * counts from actual records) + latest incoming + triage counter.
      */
     public function __invoke(): View
     {
@@ -33,10 +33,23 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Triage counter for the queue button: how many NEW reports are waiting
+        $newCount = Sitrep::whereHas('currentStatus', fn ($q) => $q->where('name', 'Submitted'))->count();
+
+        // Card labels: DB status name -> reviewer-friendly display label
+        $labels = [
+            'Submitted' => 'Newly Submitted',
+            'Under Review' => 'For Review',
+            'Validated' => 'Validated',
+            'Returned for Correction' => 'Returned',
+        ];
+
         return view('command.dashboard', [
             'statuses' => $statuses,
             'counts' => $counts,
             'recent' => $recent,
+            'newCount' => $newCount,
+            'labels' => $labels,
         ]);
     }
 }

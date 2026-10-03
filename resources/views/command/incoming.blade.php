@@ -6,11 +6,12 @@
     <div class="px-4 py-6 sm:px-6 lg:px-8">
         <div class="max-w-3xl mx-auto">
 
-            {{-- Status tabs --}}
+            {{-- Status tabs. The queue defaults to Newly Submitted (no param);
+                 "All" is now EXPLICIT (?status=all) since empty = Submitted. --}}
             <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-                <a href="{{ route('command.incoming') }}"
+                <a href="{{ route('command.incoming', ['status' => 'all']) }}"
                    class="shrink-0 min-h-[44px] inline-flex items-center px-4 py-2 rounded-full text-sm font-medium border
-                          {{ is_null($activeStatus) ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300' }}">
+                          {{ $activeStatus === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300' }}">
                     All
                 </a>
                 @foreach ($statuses as $status)

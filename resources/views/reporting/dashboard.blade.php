@@ -41,7 +41,7 @@
                     <a href="{{ route('reporting.sitreps.index', ['status' => $status->name]) }}"
                        class="rounded-lg border border-gray-200 bg-white p-4 hover:border-blue-400 transition">
                         <p class="text-2xl font-bold text-gray-900">{{ $counts[$status->id] ?? 0 }}</p>
-                        <p class="mt-1 text-xs font-medium text-gray-500">{{ $status->name }}</p>
+                        <p class="mt-1 text-xs font-medium text-gray-500">{{ $labels[$status->name] ?? $status->name }}</p>
                     </a>
                 @endforeach
             </div>

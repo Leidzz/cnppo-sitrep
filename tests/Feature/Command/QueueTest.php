@@ -106,3 +106,23 @@ it('lets the reviewer open the detail and forbids officers from the command deta
         ->get(route('command.sitreps.show', $sitrep))
         ->assertForbidden();
 });
+
+it('defaults the queue to newly submitted only, with all as an explicit tab', function () {
+    $officer = User::factory()->create(['unit_id' => Unit::first()->id])->assignRole('reporting-personnel');
+
+    $sub = makeSitrepFor($officer, 'Submitted');
+    $val = makeSitrepFor($officer, 'Validated');
+
+    // No status param = triage view: only Newly Submitted
+    $this->actingAs(reviewer())
+        ->get(route('command.incoming'))
+        ->assertOk()
+        ->assertSee($sub->reference_number)
+        ->assertDontSee($val->reference_number);
+
+    // Explicit all tab = everything in the pipeline
+    $this->actingAs(reviewer())
+        ->get(route('command.incoming', ['status' => 'all']))
+        ->assertOk()
+        ->assertSee($val->reference_number);
+});

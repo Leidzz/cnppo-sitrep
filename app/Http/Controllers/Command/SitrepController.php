@@ -18,18 +18,22 @@ class SitrepController extends Controller
     private const QUEUE_STATUSES = ['Submitted', 'Under Review', 'Validated', 'Returned for Correction'];
 
     /**
-     * Incoming queue — review-related statuses ONLY (never drafts),
-     * across ALL units. Filters: status tab, unit, report type.
+     * Incoming queue — the reviewer's triage list. Defaults to Newly
+     * Submitted (what needs attention NOW); ?status=all shows everything
+     * in the review pipeline. Never drafts. Filters: unit, report type.
      */
     public function incoming(Request $request): View
     {
-        $activeStatus = $request->query('status');
-        abort_unless(is_null($activeStatus) || in_array($activeStatus, self::QUEUE_STATUSES), 404);
+        $activeStatus = $request->query('status', 'Submitted');
+        $showAll = $activeStatus === 'all';
+        abort_unless($showAll || in_array($activeStatus, self::QUEUE_STATUSES), 404);
+
+        abort_unless($showAll || in_array($activeStatus, self::QUEUE_STATUSES), 404);
 
         $sitreps = Sitrep::query()
             ->with(['unit', 'reportType', 'currentStatus'])
             ->whereHas('currentStatus', fn ($q) => $q->whereIn('name', self::QUEUE_STATUSES))
-            ->when($activeStatus, fn ($q) => $q->whereHas('currentStatus', fn ($s) => $s->where('name', $activeStatus)))
+            ->when(! $showAll, fn ($q) => $q->whereHas('currentStatus', fn ($s) => $s->where('name', $activeStatus)))
             ->when($request->query('unit_id'), function ($q) use ($request) {
                 abort_unless(Unit::whereKey($request->query('unit_id'))->exists(), 404);
                 $q->where('unit_id', $request->query('unit_id'));
@@ -150,7 +154,7 @@ class SitrepController extends Controller
     /**
      * JSON feed of mappable reports. Only records WITH coordinates appear.
      * Neutral fields only — the popup says 'Location captured (device)',
-     * never 'verified'.
+     * never 'verified'. Includes device accuracy for the uncertainty circle.
      */
     public function mapData(Request $request): JsonResponse
     {
@@ -174,6 +178,7 @@ class SitrepController extends Controller
                 'status' => $s->currentStatus->name,
                 'lat' => $s->latitude,
                 'lng' => $s->longitude,
+                'accuracy' => $s->gps_accuracy_meters,
                 'captured_at' => $s->location_captured_at?->format('M d, Y g:i A'),
                 'url' => route('command.sitreps.show', $s),
             ]);

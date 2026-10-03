@@ -18,14 +18,15 @@
                     <a href="{{ route('command.incoming', ['status' => $status->name]) }}"
                        class="rounded-lg border border-gray-200 bg-white p-4 hover:border-blue-400 transition">
                         <p class="text-2xl font-bold text-gray-900">{{ $counts[$status->id] ?? 0 }}</p>
-                        <p class="mt-1 text-xs font-medium text-gray-500">{{ $status->name }}</p>
+                        <p class="mt-1 text-xs font-medium text-gray-500">{{ $labels[$status->name] ?? $status->name }}</p>
                     </a>
                 @endforeach
             </div>
 
-            <div class="mt-6">
-                <a href="{{ route('command.incoming') }}" class="min-h-[44px] inline-flex items-center px-6 py-3 rounded-lg bg-blue-700 text-white text-base font-semibold hover:bg-blue-800">
-                    Open Incoming Queue
+            <div class="mt-6 flex flex-wrap gap-3">
+                <a href="{{ route('command.incoming') }}"
+                   class="min-h-[44px] inline-flex items-center px-6 py-3 rounded-lg bg-blue-700 text-white text-base font-semibold hover:bg-blue-800">
+                    Open Incoming Queue ({{ $newCount }})
                 </a>
                 <a href="{{ route('command.reports.index') }}"
                    class="min-h-[44px] inline-flex items-center px-6 py-3 rounded-lg border border-gray-300 bg-white text-base font-semibold text-gray-700 hover:bg-gray-50">
