@@ -70,7 +70,8 @@
                     @endforeach
                 </div>
 
-                {{-- GPS: prefill from existing values; officer may re-capture --}}
+                {{-- GPS: prefill from existing values; watch-and-refine re-capture
+                     keeps the BEST fix for up to 12s; auto-stops at ≤10m --}}
                 <div class="mt-8" x-data="{
                     lat: {{ json_encode(old('latitude', $sitrep->latitude)) }},
                     lng: {{ json_encode(old('longitude', $sitrep->longitude)) }},
@@ -80,6 +81,9 @@
                     geoError: null,
                     map: null,
                     marker: null,
+                    watchId: null,
+                    bestFix: null,
+                    timer: null,
 
                     capture() {
                         if (! navigator.geolocation) {
@@ -88,18 +92,36 @@
                         }
                         this.locating = true;
                         this.geoError = null;
-                        navigator.geolocation.getCurrentPosition(
+                        this.bestFix = null;
+
+                        this.timer = setTimeout(() => this.finish(), 12000);
+
+                        this.watchId = navigator.geolocation.watchPosition(
                             (pos) => {
-                                this.locating = false;
-                                this.lat = pos.coords.latitude;
-                                this.lng = pos.coords.longitude;
-                                this.accuracy = pos.coords.accuracy;
-                                this.capturedAt = new Date(pos.timestamp).toISOString();
-                                this.$nextTick(() => this.renderMap());
+                                if (! this.bestFix || pos.coords.accuracy < this.bestFix.accuracy) {
+                                    this.bestFix = pos;
+                                    this.lat = pos.coords.latitude;
+                                    this.lng = pos.coords.longitude;
+                                    this.accuracy = pos.coords.accuracy;
+                                    this.capturedAt = new Date(pos.timestamp).toISOString();
+                                    this.$nextTick(() => this.renderMap());
+                                }
+                                if (pos.coords.accuracy <= 10) this.finish();
                             },
-                            (err) => { this.locating = false; this.geoError = err.message; },
-                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                            (err) => {
+                                this.locating = false;
+                                clearTimeout(this.timer);
+                                navigator.geolocation.clearWatch(this.watchId);
+                                this.geoError = err.message;
+                            },
+                            { enableHighAccuracy: true, maximumAge: 0 }
                         );
+                    },
+
+                    finish() {
+                        clearTimeout(this.timer);
+                        if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+                        this.locating = false;
                     },
 
                     renderMap() {
@@ -123,7 +145,7 @@
                         <button type="button" @click="capture()" :disabled="locating"
                                 class="min-h-[44px] px-5 py-3 rounded-lg bg-gray-800 text-white text-sm font-semibold hover:bg-gray-700 disabled:opacity-50">
                             <span x-show="!locating">Re-capture Location</span>
-                            <span x-show="locating" x-cloak>Locating…</span>
+                            <span x-show="locating" x-cloak>Improving fix… ±<span x-text="accuracy ?? '—'"></span> m</span>
                         </button>
                         <button type="button" x-show="lat !== null" x-cloak @click="lat = lng = accuracy = capturedAt = null; geoError = null"
                                 class="min-h-[44px] px-4 py-3 text-sm font-medium text-red-600">

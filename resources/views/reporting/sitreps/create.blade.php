@@ -89,8 +89,10 @@
                     </div>
                 @endforeach
 
-                {{-- 3. Location documentation (spec Sections 7-8). Part B.
-                       Neutral labeling: 'Location Captured' — NEVER 'Verified'. --}}
+                {{-- 3. Location documentation (spec Sections 7-8).
+                       Watch-and-refine: keep the BEST fix for up to 12s
+                       (GPS improves as satellites lock on); auto-stop at ≤10m.
+                       Neutral labeling — NEVER 'Verified'. --}}
                 <div class="mt-8" x-data="{
                     lat: {{ json_encode(old('latitude')) }},
                     lng: {{ json_encode(old('longitude')) }},
@@ -100,6 +102,9 @@
                     geoError: null,
                     map: null,
                     marker: null,
+                    watchId: null,
+                    bestFix: null,
+                    timer: null,
 
                     capture() {
                         if (! navigator.geolocation) {
@@ -108,25 +113,42 @@
                         }
                         this.locating = true;
                         this.geoError = null;
+                        this.bestFix = null;
 
-                        navigator.geolocation.getCurrentPosition(
+                        // Hard stop after 12s; until then keep the most
+                        // accurate fix the device produces.
+                        this.timer = setTimeout(() => this.finish(), 12000);
+
+                        this.watchId = navigator.geolocation.watchPosition(
                             (pos) => {
-                                this.locating = false;
-                                // Full precision — we never round here (rule 8).
-                                this.lat  = pos.coords.latitude;
-                                this.lng  = pos.coords.longitude;
-                                this.accuracy = pos.coords.accuracy;      // meters, device-reported
-                                this.capturedAt = new Date(pos.timestamp).toISOString(); // DEVICE clock
-                                this.$nextTick(() => this.renderMap());
+                                // Keep only the BEST (lowest) accuracy seen
+                                if (! this.bestFix || pos.coords.accuracy < this.bestFix.accuracy) {
+                                    this.bestFix = pos;
+                                    // Full precision — we never round here (rule 8).
+                                    this.lat  = pos.coords.latitude;
+                                    this.lng  = pos.coords.longitude;
+                                    this.accuracy = pos.coords.accuracy;      // meters, device-reported
+                                    this.capturedAt = new Date(pos.timestamp).toISOString(); // DEVICE clock
+                                    this.$nextTick(() => this.renderMap());
+                                }
+                                // Excellent fix? Stop early — no need to wait.
+                                if (pos.coords.accuracy <= 10) this.finish();
                             },
                             (err) => {
                                 this.locating = false;
+                                clearTimeout(this.timer);
+                                navigator.geolocation.clearWatch(this.watchId);
                                 this.geoError = err.message;
                             },
-                            // maximumAge: 0 — never accept a cached fix; the point
-                            // must be captured NOW, not recycled from minutes ago.
-                            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                            // maximumAge: 0 — never accept a cached fix.
+                            { enableHighAccuracy: true, maximumAge: 0 }
                         );
+                    },
+
+                    finish() {
+                        clearTimeout(this.timer);
+                        if (this.watchId) navigator.geolocation.clearWatch(this.watchId);
+                        this.locating = false;
                     },
 
                     renderMap() {
@@ -141,8 +163,6 @@
                             attribution: '© OpenStreetMap contributors',
                         }).addTo(this.map);
                         this.marker = L.marker([this.lat, this.lng]).addTo(this.map);
-                        // Fix tiles not rendering when the map was initialized
-                        // while its container was hidden
                         setTimeout(() => this.map.invalidateSize(), 100);
                     },
                 }">
@@ -153,7 +173,7 @@
                         <button type="button" @click="capture()" :disabled="locating"
                                 class="min-h-[44px] px-5 py-3 rounded-lg bg-gray-800 text-white text-sm font-semibold hover:bg-gray-700 disabled:opacity-50">
                             <span x-show="!locating">Capture Location</span>
-                            <span x-show="locating" x-cloak>Locating…</span>
+                            <span x-show="locating" x-cloak>Improving fix… ±<span x-text="accuracy ?? '—'"></span> m</span>
                         </button>
                         <button type="button" x-show="lat !== null" x-cloak @click="lat = lng = accuracy = capturedAt = null; geoError = null"
                                 class="min-h-[44px] px-4 py-3 text-sm font-medium text-red-600">
