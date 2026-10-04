@@ -11,6 +11,8 @@ use Database\Seeders\RoleSeeder;
 use Database\Seeders\StatusSeeder;
 use Database\Seeders\UnitSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -19,13 +21,24 @@ beforeEach(function () {
 });
 
 it('notifies command center when a sitrep is submitted', function () {
+    Storage::fake('sitrep_photos');
+
     $reviewer = User::factory()->create()->assignRole('command-center');
     $officer = User::factory()->create(['unit_id' => Unit::first()->id])->assignRole('reporting-personnel');
 
     $this->actingAs($officer)->post(route('reporting.sitreps.store'), [
         'report_type_id' => ReportType::where('name', 'Checkpoint')->first()->id,
         'action' => 'submit',
-        'dynamic_fields' => ['what' => 'x', 'where' => 'y', 'when' => 'z', 'how' => 'w'],
+        'dynamic_fields' => [
+            'what' => 'x', 'where' => 'y',
+            'when_date' => '2026-09-27', 'when_time' => '22:00',
+            'how' => 'w',
+        ],
+        'photos' => [
+            UploadedFile::fake()->image('a.jpg', 100, 100)->size(50),
+            UploadedFile::fake()->image('b.jpg', 100, 100)->size(50),
+            UploadedFile::fake()->image('c.jpg', 100, 100)->size(50),
+        ],
     ]);
 
     expect(Notification::where('user_id', $reviewer->id)->where('type', 'new_sitrep')->count())->toBe(1);

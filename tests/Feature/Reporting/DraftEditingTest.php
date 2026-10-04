@@ -42,6 +42,15 @@ function makeEditableSitrep(string $statusName = 'Draft'): array
     return [$user, $sitrep];
 }
 
+function threePhotosEdit(): array
+{
+    return [
+        UploadedFile::fake()->image('a.jpg', 100, 100)->size(50),
+        UploadedFile::fake()->image('b.jpg', 100, 100)->size(50),
+        UploadedFile::fake()->image('c.jpg', 100, 100)->size(50),
+    ];
+}
+
 it('shows the edit form to the owner of a draft', function () {
     [$owner, $sitrep] = makeEditableSitrep();
 
@@ -75,7 +84,10 @@ it('updates a drafts content and logs the edit', function () {
     $this->actingAs($owner)->put(route('reporting.sitreps.update', $sitrep), [
         'report_type_id' => $sitrep->report_type_id,
         'action' => 'draft',
-        'dynamic_fields' => ['what' => 'Updated what', 'where' => 'Original where', 'when' => 'Now', 'how' => 'Updated'],
+        'dynamic_fields' => [
+            'what' => 'Updated what', 'where' => 'Original where',
+            'when_date' => '2026-09-27', 'when_time' => '22:00', 'how' => 'Updated',
+        ],
     ])->assertRedirect(route('reporting.sitreps.show', $sitrep));
 
     $sitrep->refresh();
@@ -86,14 +98,18 @@ it('updates a drafts content and logs the edit', function () {
 });
 
 it('submits a finished draft through the update path', function () {
+    Storage::fake('sitrep_photos');
+
     [$owner, $sitrep] = makeEditableSitrep();
 
     $this->actingAs($owner)->put(route('reporting.sitreps.update', $sitrep), [
         'report_type_id' => $sitrep->report_type_id,
         'action' => 'submit',
         'dynamic_fields' => [
-            'what' => 'Done', 'where' => 'There', 'when' => 'Tonight', 'how' => 'Properly',
+            'what' => 'Done', 'where' => 'There',
+            'when_date' => '2026-09-27', 'when_time' => '22:00', 'how' => 'Properly',
         ],
+        'photos' => threePhotosEdit(),
     ])->assertRedirect(route('reporting.sitreps.show', $sitrep));
 
     $sitrep->refresh();
@@ -106,14 +122,18 @@ it('submits a finished draft through the update path', function () {
 });
 
 it('resubmits a returned report after correction', function () {
+    Storage::fake('sitrep_photos');
+
     [$owner, $sitrep] = makeEditableSitrep('Returned for Correction');
 
     $this->actingAs($owner)->put(route('reporting.sitreps.update', $sitrep), [
         'report_type_id' => $sitrep->report_type_id,
         'action' => 'submit',
         'dynamic_fields' => [
-            'what' => 'Corrected', 'where' => 'There', 'when' => 'Tonight', 'how' => 'Properly',
+            'what' => 'Corrected', 'where' => 'There',
+            'when_date' => '2026-09-27', 'when_time' => '22:00', 'how' => 'Properly',
         ],
+        'photos' => threePhotosEdit(),
     ])->assertRedirect(route('reporting.sitreps.show', $sitrep));
 
     $sitrep->refresh();

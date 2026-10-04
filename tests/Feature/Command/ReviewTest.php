@@ -11,6 +11,8 @@ use Database\Seeders\RoleSeeder;
 use Database\Seeders\StatusSeeder;
 use Database\Seeders\UnitSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -119,6 +121,8 @@ it('cannot re-review a validated report', function () {
 });
 
 it('completes the full loop: return, correct, resubmit, validate', function () {
+    Storage::fake('sitrep_photos');
+
     [$officer, $sitrep] = makeSubmittedSitrep();
     $reviewer = commandReviewer();
 
@@ -129,12 +133,19 @@ it('completes the full loop: return, correct, resubmit, validate', function () {
     ]);
     expect($sitrep->refresh()->currentStatus->name)->toBe('Returned for Correction');
 
-    // 2. officer corrects and resubmits (via the update path)
+    // 2. officer corrects and resubmits (submit rules apply: pickers + 3 photos)
     $this->actingAs($officer)->put(route('reporting.sitreps.update', $sitrep), [
         'report_type_id' => $sitrep->report_type_id,
         'action' => 'submit',
         'dynamic_fields' => [
-            'what' => 'Done', 'where' => 'There', 'when' => 'Now', 'how' => 'Properly',
+            'what' => 'Done', 'where' => 'There',
+            'when_date' => '2026-09-27', 'when_time' => '22:00',
+            'how' => 'Properly',
+        ],
+        'photos' => [
+            UploadedFile::fake()->image('a.jpg', 100, 100)->size(50),
+            UploadedFile::fake()->image('b.jpg', 100, 100)->size(50),
+            UploadedFile::fake()->image('c.jpg', 100, 100)->size(50),
         ],
     ]);
     expect($sitrep->refresh()->currentStatus->name)->toBe('Submitted');
@@ -146,7 +157,6 @@ it('completes the full loop: return, correct, resubmit, validate', function () {
     expect($sitrep->refresh()->currentStatus->name)->toBe('Validated');
 
     // the audit trail tells the whole story — only status CHANGES
-    // (the officer's 'updated' row is covered by DraftEditingTest)
     expect(AuditLog::where('action', 'status_changed')->orderBy('id')->pluck('new_status')->all())
         ->toBe(['Under Review', 'Returned for Correction', 'Submitted', 'Under Review', 'Validated']);
 });

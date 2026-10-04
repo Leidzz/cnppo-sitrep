@@ -20,6 +20,20 @@ class StoreSitrepRequest extends FormRequest
 
     public function rules(): array
     {
+        // Photos: client-confirmed 3-5, enforced at SUBMIT only. Drafts may
+        // carry 0-5. On submit, photos already attached to the SITREP count
+        // toward the minimum (so editing a draft never requires re-attaching).
+        $photoRules = ['nullable', 'array', 'max:5'];
+
+        if ($this->input('action') === 'submit') {
+            $photoRules = [
+                $this->minPhotosNeeded() > 0 ? 'required' : 'nullable',
+                'array',
+                'min:'.$this->minPhotosNeeded(),
+                'max:5',
+            ];
+        }
+
         $rules = [
             'report_type_id' => ['required', 'exists:report_types,id'],
             'action' => ['required', 'in:draft,submit'],
@@ -38,14 +52,7 @@ class StoreSitrepRequest extends FormRequest
             'location_captured_at' => ['nullable', 'date'],
             'location_description' => ['nullable', 'string', 'max:255'],
 
-            // Photos: client-confirmed 3-5. On submit the request must reach
-            // 3 total; photos already attached to a draft count toward it.
-            'photos' => [
-                $this->input('action') === 'submit' && $this->minPhotosNeeded() > 0 ? 'required' : 'nullable',
-                'array',
-                'min:'.$this->minPhotosNeeded(),
-                'max:5',
-            ],
+            'photos' => $photoRules,
             'photos.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp',
                 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
