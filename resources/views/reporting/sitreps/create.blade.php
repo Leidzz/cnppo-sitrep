@@ -65,8 +65,7 @@
                 </div>
 
                 {{-- 2. Dynamic fields: one block per report type, Alpine shows the chosen one.
-                       NOTHING here is hardcoded — labels, keys, required, and input type
-                       all come from template_fields.
+                       Field TYPE comes from template_fields: textarea / date / time / text.
                        Inputs of unselected types are DISABLED so the browser never
                        submits them (duplicate names would overwrite each other). --}}
                 @foreach ($reportTypes as $rt)
@@ -89,6 +88,22 @@
                                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
                                                      focus:border-blue-500 focus:ring-blue-500
                                                      disabled:bg-gray-50 disabled:text-gray-400">{{ old('dynamic_fields.'.$field->field_key) }}</textarea>
+                                @elseif ($field->field_type === 'date')
+                                    <input type="date" id="df_{{ $field->field_key }}_{{ $rt->id }}"
+                                           name="dynamic_fields[{{ $field->field_key }}]"
+                                           value="{{ old('dynamic_fields.'.$field->field_key) }}"
+                                           :disabled="type !== {{ $rt->id }}"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
+                                                  focus:border-blue-500 focus:ring-blue-500 min-h-[44px]
+                                                  disabled:bg-gray-50 disabled:text-gray-400">
+                                @elseif ($field->field_type === 'time')
+                                    <input type="time" id="df_{{ $field->field_key }}_{{ $rt->id }}"
+                                           name="dynamic_fields[{{ $field->field_key }}]"
+                                           value="{{ old('dynamic_fields.'.$field->field_key) }}"
+                                           :disabled="type !== {{ $rt->id }}"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm
+                                                  focus:border-blue-500 focus:ring-blue-500 min-h-[44px]
+                                                  disabled:bg-gray-50 disabled:text-gray-400">
                                 @else
                                     <input type="text" id="df_{{ $field->field_key }}_{{ $rt->id }}"
                                            name="dynamic_fields[{{ $field->field_key }}]"
@@ -307,7 +322,7 @@
                     },
                 }">
                     <h3 class="text-lg font-semibold text-gray-900">Photo Documentation</h3>
-                    <p class="mt-1 text-sm text-gray-500">JPEG, PNG, or WebP · max 5 MB each · up to 5 photos. GPS Map Camera output may be attached as a photo.</p>
+                    <p class="mt-1 text-sm text-gray-500">JPEG, PNG, or WebP · min 3 / max 5 photos · max 5 MB each. GPS Map Camera output may be attached.</p>
 
                     <label for="photos" class="mt-4 flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50">
                         Choose Photos

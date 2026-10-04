@@ -74,6 +74,14 @@
                             @if ($field->field_type === 'textarea')
                                 <textarea id="df_{{ $field->field_key }}" name="dynamic_fields[{{ $field->field_key }}]" rows="4"
                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ $value }}</textarea>
+                            @elseif ($field->field_type === 'date')
+                                <input type="date" id="df_{{ $field->field_key }}" name="dynamic_fields[{{ $field->field_key }}]"
+                                       value="{{ $value }}"
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[44px]">
+                            @elseif ($field->field_type === 'time')
+                                <input type="time" id="df_{{ $field->field_key }}" name="dynamic_fields[{{ $field->field_key }}]"
+                                       value="{{ $value }}"
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[44px]">
                             @else
                                 <input type="text" id="df_{{ $field->field_key }}" name="dynamic_fields[{{ $field->field_key }}]"
                                        value="{{ $value }}"
@@ -267,7 +275,7 @@
                     },
                 }">
                     <h3 class="text-lg font-semibold text-gray-900">Add Photos</h3>
-                    <p class="mt-1 text-sm text-gray-500">Attach additional photos. JPEG, PNG, or WebP · max 5 MB each · up to 5 per save. Existing photos stay attached.</p>
+                    <p class="mt-1 text-sm text-gray-500">Attach additional photos. Existing photos stay attached. JPEG, PNG, or WebP · min 3 / max 5 total · max 5 MB each.</p>
 
                     <label for="photos" class="mt-4 flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-50">
                         Choose Photos

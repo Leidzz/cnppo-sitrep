@@ -25,6 +25,15 @@ function makeReporter(): User
         ->assignRole('reporting-personnel');
 }
 
+function threePhotos(): array
+{
+    return [
+        UploadedFile::fake()->image('a.jpg', 800, 600)->size(300),
+        UploadedFile::fake()->image('b.jpg', 800, 600)->size(300),
+        UploadedFile::fake()->image('c.jpg', 800, 600)->size(300),
+    ];
+}
+
 it('shows report types and their dynamic fields on the create page', function () {
     $this->actingAs(makeReporter())
         ->get(route('reporting.sitreps.create'))
@@ -76,10 +85,17 @@ it('rejects a submission missing required fields', function () {
         'report_type_id' => $checkpoint->id,
         'action' => 'submit',
         'dynamic_fields' => ['what' => 'Only one field filled'],
-    ])->assertSessionHasErrors(['dynamic_fields.where', 'dynamic_fields.when', 'dynamic_fields.how']);
+    ])->assertSessionHasErrors([
+        'dynamic_fields.where',
+        'dynamic_fields.when_date',
+        'dynamic_fields.when_time',
+        'dynamic_fields.how',
+    ]);
 });
 
 it('submits: status Submitted, timestamp set, two audit entries', function () {
+    Storage::fake('sitrep_photos');
+
     $user = makeReporter();
     $checkpoint = ReportType::where('name', 'Checkpoint')->first();
 
@@ -88,8 +104,10 @@ it('submits: status Submitted, timestamp set, two audit entries', function () {
         'action' => 'submit',
         'dynamic_fields' => [
             'what' => 'Checkpoint', 'where' => 'Brgy. Poblacion',
-            'when' => 'Oct 2, 8PM-10PM', 'how' => 'Standard checkpoint ops',
+            'when_date' => '2026-09-27', 'when_time' => '22:00',
+            'how' => 'Standard checkpoint ops',
         ],
+        'photos' => threePhotos(),
     ])->assertRedirect(route('reporting.dashboard'));
 
     $sitrep = Sitrep::sole();
@@ -113,6 +131,8 @@ it('forbids command-center users from storing a sitrep', function () {
 });
 
 it('stores GPS location fields on submit', function () {
+    Storage::fake('sitrep_photos');
+
     $user = makeReporter();
     $checkpoint = ReportType::where('name', 'Checkpoint')->first();
 
@@ -121,13 +141,15 @@ it('stores GPS location fields on submit', function () {
         'action' => 'submit',
         'dynamic_fields' => [
             'what' => 'Checkpoint', 'where' => 'Brgy. Poblacion',
-            'when' => 'Oct 2, 8PM-10PM', 'how' => 'Standard checkpoint ops',
+            'when_date' => '2026-09-27', 'when_time' => '22:00',
+            'how' => 'Standard checkpoint ops',
         ],
         'latitude' => 13.6212847,
         'longitude' => 122.9561234,
         'gps_accuracy_meters' => 4.5,
         'location_captured_at' => '2026-10-02T01:30:00.000000Z',
         'location_description' => 'Brgy. Poblacion, national highway',
+        'photos' => threePhotos(),
     ])->assertRedirect(route('reporting.dashboard'));
 
     $sitrep = Sitrep::sole();
@@ -161,16 +183,14 @@ it('stores uploaded photos on the private disk with attachment rows', function (
         'action' => 'submit',
         'dynamic_fields' => [
             'what' => 'Checkpoint', 'where' => 'Brgy. Poblacion',
-            'when' => 'Oct 2, 8PM-10PM', 'how' => 'Standard checkpoint ops',
+            'when_date' => '2026-09-27', 'when_time' => '22:00',
+            'how' => 'Standard checkpoint ops',
         ],
-        'photos' => [
-            UploadedFile::fake()->image('checkpoint-1.jpg', 800, 600)->size(400),
-            UploadedFile::fake()->image('checkpoint-2.png', 800, 600)->size(300),
-        ],
+        'photos' => threePhotos(),
     ])->assertRedirect(route('reporting.dashboard'));
 
     $sitrep = Sitrep::sole();
-    expect($sitrep->attachments)->toHaveCount(2);
+    expect($sitrep->attachments)->toHaveCount(3);
 
     $attachment = $sitrep->attachments->first();
     expect($attachment->uploaded_by)->toBe($user->id);
@@ -179,12 +199,16 @@ it('stores uploaded photos on the private disk with attachment rows', function (
 });
 
 it('rejects non-image files even with a fake image extension', function () {
+    Storage::fake('sitrep_photos');
     $checkpoint = ReportType::where('name', 'Checkpoint')->first();
 
     $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
         'report_type_id' => $checkpoint->id,
-        'action' => 'draft',
-        'dynamic_fields' => [],
+        'action' => 'submit',
+        'dynamic_fields' => [
+            'what' => 'x', 'where' => 'y', 'when_date' => '2026-09-27',
+            'when_time' => '22:00', 'how' => 'z',
+        ],
         'photos' => [UploadedFile::fake()->create('fake.jpg', 200, 'application/x-msdownload')],
     ])->assertSessionHasErrors(['photos.0']);
 });
@@ -243,6 +267,8 @@ it('rejects a station that does not exist', function () {
 });
 
 it('stores checkpoint team composition rows', function () {
+    Storage::fake('sitrep_photos');
+
     $checkpoint = ReportType::where('name', 'Checkpoint')->first();
 
     $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
@@ -250,12 +276,14 @@ it('stores checkpoint team composition rows', function () {
         'action' => 'submit',
         'dynamic_fields' => [
             'what' => 'Checkpoint', 'where' => 'Brgy. Bactas',
-            'when' => '10:00 PM onwards Sep 27', 'how' => 'Checkpoint and Oplan Sita',
+            'when_date' => '2026-09-27', 'when_time' => '22:00',
+            'how' => 'Checkpoint and Oplan Sita',
         ],
         'personnel' => [
             ['name' => 'PLT ABUNDO, Bernardino Ludovico R', 'position' => 'Team Leader'],
             ['name' => 'Pat Candelaria', 'position' => 'Driver'],
         ],
+        'photos' => threePhotos(),
     ])->assertRedirect(route('reporting.dashboard'));
 
     $personnel = Sitrep::sole()->personnel;
@@ -303,4 +331,75 @@ it('replaces team composition when a draft is updated', function () {
     $personnel = $sitrep->refresh()->personnel;
     expect($personnel)->toHaveCount(2);
     expect($personnel->pluck('name')->all())->toBe(['Replacement Leader', 'New Verifier']);
+});
+
+it('requires at least three photos on submit', function () {
+    Storage::fake('sitrep_photos');
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'submit',
+        'dynamic_fields' => [
+            'what' => 'Checkpoint', 'where' => 'Brgy. Bactas',
+            'when_date' => '2026-09-27', 'when_time' => '22:00', 'how' => 'Checkpoint ops',
+        ],
+        'photos' => [
+            UploadedFile::fake()->image('a.jpg', 100, 100)->size(50),
+            UploadedFile::fake()->image('b.jpg', 100, 100)->size(50),
+        ],
+    ])->assertSessionHasErrors(['photos']);
+});
+
+it('counts photos already attached when a draft is submitted via update', function () {
+    Storage::fake('sitrep_photos');
+    $owner = makeReporter();
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs($owner)->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => [],
+        'photos' => [
+            UploadedFile::fake()->image('a.jpg', 100, 100)->size(50),
+            UploadedFile::fake()->image('b.jpg', 100, 100)->size(50),
+        ],
+    ]);
+
+    $sitrep = Sitrep::sole();
+
+    $this->actingAs($owner)->put(route('reporting.sitreps.update', $sitrep), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'submit',
+        'dynamic_fields' => [
+            'what' => 'Checkpoint', 'where' => 'Brgy. Bactas',
+            'when_date' => '2026-09-27', 'when_time' => '22:00', 'how' => 'Checkpoint ops',
+        ],
+        'photos' => [UploadedFile::fake()->image('c.jpg', 100, 100)->size(50)],
+    ])->assertSessionDoesntHaveErrors();
+
+    expect($sitrep->refresh()->attachments)->toHaveCount(3);
+    expect($sitrep->currentStatus->name)->toBe('Submitted');
+});
+
+it('accepts date and time picker values', function () {
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => ['when_date' => '2026-09-27', 'when_time' => '22:00'],
+    ])->assertSessionDoesntHaveErrors();
+
+    expect(Sitrep::sole()->dynamic_fields['when_date'])->toBe('2026-09-27');
+});
+
+it('rejects an invalid time value', function () {
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => ['when_date' => '2026-09-27', 'when_time' => 'not-a-time'],
+    ])->assertSessionHasErrors(['dynamic_fields.when_time']);
 });

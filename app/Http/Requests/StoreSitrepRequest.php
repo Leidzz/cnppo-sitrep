@@ -9,13 +9,6 @@ use Illuminate\Validation\Rule;
 
 class StoreSitrepRequest extends FormRequest
 {
-    /**
-     * Authorize via the policy — validation and permission in one door.
-     *
-     * Context-aware: on update routes a {sitrep} model is bound, so we
-     * check the 'update' policy (owner + editable state). On create routes
-     * there's no model, so we check 'create'.
-     */
     public function authorize(): bool
     {
         if ($sitrep = $this->route('sitrep')) {
@@ -25,37 +18,34 @@ class StoreSitrepRequest extends FormRequest
         return $this->user()->can('create', Sitrep::class);
     }
 
-    /**
-     * Static rules first, then rules built FROM THE DATABASE for whichever
-     * report type was chosen. This is rule 5 applied to validation:
-     * the seeder/admin decides what's required; this code only reads it.
-     */
     public function rules(): array
     {
         $rules = [
             'report_type_id' => ['required', 'exists:report_types,id'],
             'action' => ['required', 'in:draft,submit'],
             'dynamic_fields' => ['nullable', 'array'],
-
-            // Filing station: officer may file for another of the 14 units
-            // (client-confirmed). Defaults to the officer's own unit when absent.
             'unit_id' => ['nullable', 'exists:units,id'],
 
-            // Checkpoint Team Composition (client-confirmed). Optional as a
-            // whole; when rows are present, each needs a name and a position
-            // from the approved list in config/sitrep.php.
+            // Checkpoint Team Composition
             'personnel' => ['nullable', 'array', 'max:15'],
             'personnel.*.name' => ['required', 'string', 'max:255'],
             'personnel.*.position' => ['required', Rule::in(config('sitrep.positions'))],
 
-            // GPS / location documentation (spec Section 7 — all OPTIONAL)
+            // GPS (all optional at this stage)
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'gps_accuracy_meters' => ['nullable', 'numeric', 'gt:0', 'lt:100000'],
             'location_captured_at' => ['nullable', 'date'],
             'location_description' => ['nullable', 'string', 'max:255'],
 
-            'photos' => ['nullable', 'array', 'max:5'],
+            // Photos: client-confirmed 3-5. On submit the request must reach
+            // 3 total; photos already attached to a draft count toward it.
+            'photos' => [
+                $this->input('action') === 'submit' && $this->minPhotosNeeded() > 0 ? 'required' : 'nullable',
+                'array',
+                'min:'.$this->minPhotosNeeded(),
+                'max:5',
+            ],
             'photos.*' => ['file', 'mimetypes:image/jpeg,image/png,image/webp',
                 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
@@ -67,18 +57,32 @@ class StoreSitrepRequest extends FormRequest
                 ->orderBy('sort_order')
                 ->get()
                 ->each(function (TemplateField $field) use (&$rules) {
-                    // Required ONLY when: submitting AND the admin marked it required.
-                    // Drafts may be incomplete; optional fields stay optional.
                     $isRequired = $this->input('action') === 'submit' && $field->is_required;
 
-                    $rules["dynamic_fields.{$field->field_key}"] = [
-                        $isRequired ? 'required' : 'nullable',
-                        'string',
-                        'max:5000',
-                    ];
+                    $typeRules = match ($field->field_type) {
+                        'date' => ['date'],
+                        'time' => ['date_format:H:i'],
+                        default => ['string', 'max:5000'],
+                    };
+
+                    $rules["dynamic_fields.{$field->field_key}"] = array_merge(
+                        [$isRequired ? 'required' : 'nullable'],
+                        $typeRules
+                    );
                 });
         }
 
         return $rules;
+    }
+
+    private function minPhotosNeeded(): int
+    {
+        $existing = 0;
+
+        if ($sitrep = $this->route('sitrep')) {
+            $existing = $sitrep->attachments()->count();
+        }
+
+        return max(0, 3 - $existing);
     }
 }
