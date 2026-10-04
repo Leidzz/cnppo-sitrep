@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminGpsController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\Command\DashboardController as CommandDashboardController;
 use App\Http\Controllers\Command\SitrepController as CommandSitrepController;
@@ -82,6 +83,16 @@ Route::middleware(['auth', 'verified', 'role:command-center'])->group(function (
 
     Route::get('/command/map/data', [CommandSitrepController::class, 'mapData'])
         ->name('command.map.data');
+});
+
+// Administrator section — configuration + GPS accuracy study
+Route::middleware(['auth', 'verified', 'role:administrator'])->group(function () {
+    Route::get('/admin/gps', [AdminGpsController::class, 'index'])
+        ->name('admin.gps.index');
+    Route::post('/admin/gps/points', [AdminGpsController::class, 'storePoint'])
+        ->name('admin.gps.points.store');
+    Route::delete('/admin/gps/points/{referencePoint}', [AdminGpsController::class, 'destroyPoint'])
+        ->name('admin.gps.points.destroy');
 });
 
 require __DIR__.'/auth.php';

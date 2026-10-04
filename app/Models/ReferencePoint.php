@@ -10,13 +10,16 @@ class ReferencePoint extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['label', 'latitude', 'longitude'];
+    protected $fillable = ['label', 'description', 'latitude', 'longitude'];
 
     protected $casts = [
-        'latitude' => 'decimal:7',
-        'longitude' => 'decimal:7',
+        'latitude' => 'float',     // float, NOT decimal:7 — we compute distances on these
+        'longitude' => 'float',
     ];
 
+    /**
+     * @return HasMany<GpsObservation, $this>
+     */
     public function observations(): HasMany
     {
         return $this->hasMany(GpsObservation::class);

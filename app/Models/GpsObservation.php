@@ -13,6 +13,8 @@ class GpsObservation extends Model
     protected $fillable = [
         'reference_point_id',
         'captured_by',
+        'device_label',
+        'conditions',
         'captured_latitude',
         'captured_longitude',
         'device_accuracy_meters',
@@ -22,19 +24,25 @@ class GpsObservation extends Model
     ];
 
     protected $casts = [
-        'captured_latitude' => 'decimal:7',
-        'captured_longitude' => 'decimal:7',
-        'device_accuracy_meters' => 'decimal:2',
-        'computed_error_meters' => 'decimal:2',
+        'captured_latitude' => 'float',        // float, NOT decimal:7 — stats math needs numbers
+        'captured_longitude' => 'float',
+        'device_accuracy_meters' => 'float',
+        'computed_error_meters' => 'float',
         'device_timestamp' => 'datetime',
         'server_received_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<ReferencePoint, $this>
+     */
     public function referencePoint(): BelongsTo
     {
         return $this->belongsTo(ReferencePoint::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function capturedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'captured_by');

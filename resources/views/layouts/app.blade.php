@@ -42,6 +42,9 @@
                 ['label' => 'All Reports', 'route' => 'command.reports.index', 'icon' => 'doc', 'match' => 'command.reports.*'],
                 ['label' => 'Map View', 'route' => 'command.map', 'icon' => 'pin', 'match' => 'command.map*'],
             ],
+            'administrator' => [
+                ['label' => 'GPS Accuracy Study', 'route' => 'admin.gps.index', 'icon' => 'pin', 'match' => 'admin.gps.*'],
+            ],
         ];
         $menu = collect($menus)->first(fn ($items, $role) => $user->hasRole($role)) ?? [];
     @endphp
