@@ -13,7 +13,10 @@ class ReportTypeSeeder extends Seeder
     public function run(): void
     {
         // Police Visibility
-        $policeVisibility = ReportType::firstOrCreate(['name' => 'Police Visibility']);
+        $policeVisibility = ReportType::firstOrCreate(
+            ['name' => 'Police Visibility'],
+            ['is_active' => true, 'has_personnel' => false]
+        );
 
         $policeVisibility->templateFields()->firstOrCreate(
             ['field_key' => 'location'],
@@ -28,8 +31,12 @@ class ReportTypeSeeder extends Seeder
             ['label' => 'Activity Conducted', 'field_type' => 'textarea', 'is_required' => true, 'sort_order' => 3]
         );
 
-        // Checkpoint
-        $checkpoint = ReportType::firstOrCreate(['name' => 'Checkpoint']);
+        // Checkpoint — carries the Team Composition (client-confirmed),
+        // so the flag is set on (re)seed.
+        $checkpoint = ReportType::updateOrCreate(
+            ['name' => 'Checkpoint'],
+            ['is_active' => true, 'has_personnel' => true]
+        );
 
         $checkpoint->templateFields()->firstOrCreate(
             ['field_key' => 'what'],
@@ -53,7 +60,10 @@ class ReportTypeSeeder extends Seeder
         );
 
         // Security Assistance
-        $securityAssistance = ReportType::firstOrCreate(['name' => 'Security Assistance']);
+        $securityAssistance = ReportType::firstOrCreate(
+            ['name' => 'Security Assistance'],
+            ['is_active' => true, 'has_personnel' => false]
+        );
 
         $securityAssistance->templateFields()->firstOrCreate(
             ['field_key' => 'what'],
@@ -75,6 +85,5 @@ class ReportTypeSeeder extends Seeder
             ['field_key' => 'how'],
             ['label' => 'How', 'field_type' => 'textarea', 'is_required' => true, 'sort_order' => 5]
         );
-
     }
 }

@@ -25,7 +25,8 @@ class SitrepController extends Controller
 
         return view('reporting.sitreps.create', [
             'reportTypes' => $reportTypes,
-            'units' => Unit::orderBy('name')->get(),   // station selector (client-confirmed)
+            'units' => Unit::orderBy('name')->get(),        // station selector (client-confirmed)
+            'positions' => config('sitrep.positions'),      // Checkpoint Team Composition dropdown
         ]);
     }
 
@@ -46,6 +47,7 @@ class SitrepController extends Controller
                 'location_description',
             ]),
             unitId: $request->filled('unit_id') ? $request->integer('unit_id') : null,
+            personnel: $request->input('personnel', []),
         );
 
         if ($request->hasFile('photos')) {
@@ -96,7 +98,7 @@ class SitrepController extends Controller
         // Any other officer gets 403 — even with a valid URL.
         $this->authorize('view', $sitrep);
 
-        $sitrep->load(['reportType.templateFields', 'unit', 'creator', 'reviewer', 'currentStatus', 'attachments']);
+        $sitrep->load(['reportType.templateFields', 'unit', 'creator', 'reviewer', 'currentStatus', 'attachments', 'personnel']);
 
         return view('reporting.sitreps.show', compact('sitrep'));
     }
@@ -114,9 +116,10 @@ class SitrepController extends Controller
             ->get();
 
         return view('reporting.sitreps.edit', [
-            'sitrep' => $sitrep->load('currentStatus'),
+            'sitrep' => $sitrep->load('currentStatus', 'personnel'),   // personnel prefills the team list
             'reportTypes' => $reportTypes,
-            'units' => Unit::orderBy('name')->get(),   // station selector (correctable)
+            'units' => Unit::orderBy('name')->get(),        // station selector (correctable)
+            'positions' => config('sitrep.positions'),      // Checkpoint Team Composition dropdown
         ]);
     }
 
@@ -143,6 +146,7 @@ class SitrepController extends Controller
             ]),
             action: $request->string('action')->toString(),
             unitId: $request->filled('unit_id') ? $request->integer('unit_id') : null,
+            personnel: $request->input('personnel', []),
         );
 
         if ($request->hasFile('photos')) {

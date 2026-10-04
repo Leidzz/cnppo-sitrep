@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Sitrep;
 use App\Models\TemplateField;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSitrepRequest extends FormRequest
 {
@@ -39,6 +40,13 @@ class StoreSitrepRequest extends FormRequest
             // Filing station: officer may file for another of the 14 units
             // (client-confirmed). Defaults to the officer's own unit when absent.
             'unit_id' => ['nullable', 'exists:units,id'],
+
+            // Checkpoint Team Composition (client-confirmed). Optional as a
+            // whole; when rows are present, each needs a name and a position
+            // from the approved list in config/sitrep.php.
+            'personnel' => ['nullable', 'array', 'max:15'],
+            'personnel.*.name' => ['required', 'string', 'max:255'],
+            'personnel.*.position' => ['required', Rule::in(config('sitrep.positions'))],
 
             // GPS / location documentation (spec Section 7 — all OPTIONAL)
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],

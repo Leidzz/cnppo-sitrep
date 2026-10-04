@@ -58,6 +58,22 @@
                 </dl>
             </section>
 
+            {{-- Checkpoint Team Composition (client-confirmed): shown to both
+                 the author and reviewers whenever rows exist --}}
+            @if ($sitrep->personnel->isNotEmpty())
+                <section class="rounded-lg border border-gray-200 bg-white p-4">
+                    <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">Checkpoint Team Composition</h3>
+                    <dl class="mt-3 divide-y divide-gray-100 text-sm">
+                        @foreach ($sitrep->personnel as $member)
+                            <div class="flex items-center justify-between py-2">
+                                <dt class="text-gray-500">{{ $member->position }}</dt>
+                                <dd class="font-medium text-gray-900 text-right">{{ $member->name }}</dd>
+                            </div>
+                        @endforeach
+                    </dl>
+                </section>
+            @endif
+
             {{-- Location documentation (spec Section 7) — neutral labels only --}}
             <section class="rounded-lg border border-gray-200 bg-white p-4">
                 <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">Location Documentation</h3>
@@ -109,9 +125,9 @@
                 @endif
             </section>
 
-            {{-- NEW (Phase 3 Step 2): Review actions — rendered ONLY for
-                 command-center/admin on reviewable reports. Officers never
-                 see this section; the Form Request re-checks on POST anyway. --}}
+            {{-- Review actions — rendered ONLY for command-center/admin on
+                 reviewable reports. Officers never see this section; the
+                 Form Request re-checks on POST anyway. --}}
             @can('review', $sitrep)
                 <section class="rounded-lg border-2 border-gray-900 bg-white p-4">
                     <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">Review Decision</h3>

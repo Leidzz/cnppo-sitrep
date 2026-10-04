@@ -87,6 +87,46 @@
                     @endforeach
                 </div>
 
+                {{-- Checkpoint Team Composition (client-confirmed). Prefilled
+                     from stored rows; SAVING REPLACES the list with what is
+                     shown below. --}}
+                @if ($rt->has_personnel)
+                    <div class="mt-8"
+                         x-data="{ personnel: {{ json_encode(old('personnel', $sitrep->personnel->map(fn ($p) => ['name' => $p->name, 'position' => $p->position])->all())) }} }">
+                        <h3 class="text-sm font-semibold text-gray-900 uppercase tracking-wide">Checkpoint Team Composition</h3>
+                        <p class="mt-1 text-xs text-gray-400">Saving replaces the team list with what is shown below.</p>
+
+                        <div class="mt-3 space-y-2">
+                            <template x-for="(p, i) in personnel" :key="i">
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <input type="text" :name="`personnel[${i}][name]`" x-model="p.name"
+                                           placeholder="Name of personnel"
+                                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[44px]">
+                                    <select :name="`personnel[${i}][position]`" x-model="p.position"
+                                            class="sm:w-56 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[44px]">
+                                        <option value="">Select position…</option>
+                                        @foreach ($positions as $pos)
+                                            <option value="{{ $pos }}">{{ $pos }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" @click="personnel.splice(i, 1)"
+                                            class="min-h-[44px] px-3 text-red-600 text-lg font-bold" aria-label="Remove row">×</button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <button type="button"
+                                @click="personnel.push({ name: '', position: '' })"
+                                :disabled="personnel.length >= 15"
+                                class="mt-3 min-h-[44px] px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                            + Add personnel
+                        </button>
+
+                        @error('personnel.*.name') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        @error('personnel.*.position') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                @endif
+
                 {{-- GPS: prefill from existing values; watch-and-refine re-capture
                      keeps the BEST fix for up to 12s; auto-stops at ≤10m --}}
                 <div class="mt-8" x-data="{

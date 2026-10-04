@@ -23,10 +23,12 @@ class SitrepWorkflowService
      *
      * $unitId: client-confirmed — the officer may file under a DIFFERENT
      * station than their own; null falls back to the officer's unit.
+     * $personnel: Checkpoint Team Composition rows (validated by the Form
+     * Request against config('sitrep.positions')).
      */
-    public function create(User $user, ReportType $reportType, array $dynamicFields, string $action, array $location = [], ?int $unitId = null): Sitrep
+    public function create(User $user, ReportType $reportType, array $dynamicFields, string $action, array $location = [], ?int $unitId = null, array $personnel = []): Sitrep
     {
-        return DB::transaction(function () use ($user, $reportType, $dynamicFields, $action, $location, $unitId) {
+        return DB::transaction(function () use ($user, $reportType, $dynamicFields, $action, $location, $unitId, $personnel) {
             // Filter out nulls AND empty strings so untouched hidden fields
             // never hit the database as '' (which would fail datetime columns).
             $location = array_filter($location, fn ($v) => $v !== null && $v !== '');
@@ -39,6 +41,15 @@ class SitrepWorkflowService
                 'created_by' => $user->id,
                 'dynamic_fields' => $dynamicFields,
             ], $location));
+
+            if (! empty($personnel)) {
+                $sitrep->personnel()->createMany(
+                    collect($personnel)->map(fn ($p) => [
+                        'name' => $p['name'],
+                        'position' => $p['position'],
+                    ])->all()
+                );
+            }
 
             $this->log($sitrep, $user, 'created', null, 'Draft', 'SITREP created.');
 
@@ -130,10 +141,12 @@ class SitrepWorkflowService
      *   validated against status_transitions inside transition()
      * $unitId: station attribution is correctable while editable; null keeps
      * the report's current station.
+     * $personnel: team composition is REPLACED wholesale on each save — the
+     * form always submits the full current list.
      */
-    public function updateDraft(Sitrep $sitrep, User $user, array $dynamicFields, array $location, string $action, ?int $unitId = null): Sitrep
+    public function updateDraft(Sitrep $sitrep, User $user, array $dynamicFields, array $location, string $action, ?int $unitId = null, array $personnel = []): Sitrep
     {
-        return DB::transaction(function () use ($sitrep, $user, $dynamicFields, $location, $action, $unitId) {
+        return DB::transaction(function () use ($sitrep, $user, $dynamicFields, $location, $action, $unitId, $personnel) {
             $statusName = $sitrep->currentStatus->name;
 
             abort_unless(
@@ -148,6 +161,18 @@ class SitrepWorkflowService
                 'dynamic_fields' => $dynamicFields,
                 'unit_id' => $unitId ?? $sitrep->unit_id,   // ← correctable on edit
             ], $location));
+
+            // Team composition: delete + recreate (replace semantics). Inside
+            // the same transaction, so a failed save never leaves a partial list.
+            $sitrep->personnel()->delete();
+            if (! empty($personnel)) {
+                $sitrep->personnel()->createMany(
+                    collect($personnel)->map(fn ($p) => [
+                        'name' => $p['name'],
+                        'position' => $p['position'],
+                    ])->all()
+                );
+            }
 
             $this->log($sitrep, $user, 'updated', $statusName, $statusName, 'Report content updated.');
 

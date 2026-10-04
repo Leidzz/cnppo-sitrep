@@ -241,3 +241,66 @@ it('rejects a station that does not exist', function () {
         'dynamic_fields' => [],
     ])->assertSessionHasErrors(['unit_id']);
 });
+
+it('stores checkpoint team composition rows', function () {
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'submit',
+        'dynamic_fields' => [
+            'what' => 'Checkpoint', 'where' => 'Brgy. Bactas',
+            'when' => '10:00 PM onwards Sep 27', 'how' => 'Checkpoint and Oplan Sita',
+        ],
+        'personnel' => [
+            ['name' => 'PLT ABUNDO, Bernardino Ludovico R', 'position' => 'Team Leader'],
+            ['name' => 'Pat Candelaria', 'position' => 'Driver'],
+        ],
+    ])->assertRedirect(route('reporting.dashboard'));
+
+    $personnel = Sitrep::sole()->personnel;
+    expect($personnel)->toHaveCount(2);
+    expect($personnel->first()->position)->toBe('Team Leader');
+    expect($personnel->first()->name)->toContain('ABUNDO');
+});
+
+it('rejects a personnel position outside the approved list', function () {
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => [],
+        'personnel' => [
+            ['name' => 'Some Name', 'position' => 'Station Commander'], // not in the approved list
+        ],
+    ])->assertSessionHasErrors(['personnel.0.position']);
+});
+
+it('replaces team composition when a draft is updated', function () {
+    $owner = makeReporter();
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs($owner)->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => [],
+        'personnel' => [['name' => 'Original Member', 'position' => 'Driver']],
+    ]);
+
+    $sitrep = Sitrep::sole();
+
+    $this->actingAs($owner)->put(route('reporting.sitreps.update', $sitrep), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => [],
+        'personnel' => [
+            ['name' => 'Replacement Leader', 'position' => 'Team Leader'],
+            ['name' => 'New Verifier', 'position' => 'Verifier'],
+        ],
+    ])->assertRedirect(route('reporting.sitreps.show', $sitrep));
+
+    $personnel = $sitrep->refresh()->personnel;
+    expect($personnel)->toHaveCount(2);
+    expect($personnel->pluck('name')->all())->toBe(['Replacement Leader', 'New Verifier']);
+});

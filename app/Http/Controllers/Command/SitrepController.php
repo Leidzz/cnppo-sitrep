@@ -26,7 +26,6 @@ class SitrepController extends Controller
     {
         $activeStatus = $request->query('status', 'Submitted');
         $showAll = $activeStatus === 'all';
-        abort_unless($showAll || in_array($activeStatus, self::QUEUE_STATUSES), 404);
 
         abort_unless($showAll || in_array($activeStatus, self::QUEUE_STATUSES), 404);
 
@@ -65,7 +64,7 @@ class SitrepController extends Controller
     {
         $this->authorize('view', $sitrep);
 
-        $sitrep->load(['reportType.templateFields', 'unit', 'creator', 'reviewer', 'currentStatus', 'attachments']);
+        $sitrep->load(['reportType.templateFields', 'unit', 'creator', 'reviewer', 'currentStatus', 'attachments', 'personnel']);
 
         return view('reporting.sitreps.show', compact('sitrep'));
     }
