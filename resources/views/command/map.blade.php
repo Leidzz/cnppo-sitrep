@@ -16,6 +16,7 @@
         layer: null,
         loading: false,
         empty: false,
+        emptyTimer: null,
 
         init() {
             // Center on Camarines Norte, wide zoom first; fitted to markers after load
@@ -37,7 +38,13 @@
             const { markers } = await res.json();
 
             this.layer.clearLayers();
+
+            // Empty state behaves like a toast: shows for 5s, then fades out.
+            clearTimeout(this.emptyTimer);
             this.empty = markers.length === 0;
+            if (this.empty) {
+                this.emptyTimer = setTimeout(() => { this.empty = false; }, 5000);
+            }
 
             const bounds = [];
             for (const m of markers) {
@@ -87,7 +94,8 @@
         {{-- Map fills remaining height; short screens still usable --}}
         <div id="ops-map" class="flex-1 min-h-[60vh] z-0"></div>
 
-        <div x-show="empty" x-cloak
+        {{-- Empty state: 5-second toast, then fades (x-transition) --}}
+        <div x-show="empty" x-cloak x-transition
              class="absolute inset-x-4 top-24 mx-auto max-w-sm rounded-lg bg-white border border-gray-200 p-4 text-center text-sm text-gray-500 shadow">
             No location-captured reports in this filter.
         </div>
