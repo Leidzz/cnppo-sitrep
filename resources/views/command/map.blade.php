@@ -4,12 +4,11 @@
     </x-slot>
 
     @push('head')
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-        {{-- Marker clustering: nearby/overlapping markers collapse into a numbered badge --}}
-        <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
-        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+        <link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
+        <script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
+        <link rel="stylesheet" href="{{ asset('vendor/leaflet/MarkerCluster.css') }}">
+        <link rel="stylesheet" href="{{ asset('vendor/leaflet/MarkerCluster.Default.css') }}">
+        <script src="{{ asset('vendor/leaflet/leaflet.markercluster.js') }}"></script>
     @endpush
 
     <div x-data="{
