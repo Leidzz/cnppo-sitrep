@@ -236,7 +236,7 @@ class SitrepWorkflowService
         AuditLog::create([
             'user_id' => $user->id,
             'sitrep_id' => $sitrep->id,
-            'action' => $action,c
+            'action' => $action,
             'previous_status' => $from,
             'new_status' => $to,
             'remarks' => $remarks,
