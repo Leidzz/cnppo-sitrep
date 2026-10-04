@@ -46,6 +46,24 @@
                     @error('report_type_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </fieldset>
 
+                {{-- 1b. Filing station: client-confirmed — the officer picks which
+                       of the 14 units the report is filed under. Defaults to
+                       their own assigned station. --}}
+                <div class="mt-8">
+                    <label for="unit_id" class="block text-sm font-medium text-gray-700">
+                        Police Station / Unit <span class="text-red-600">*</span>
+                    </label>
+                    <select id="unit_id" name="unit_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[44px]">
+                        @foreach ($units as $unit)
+                            <option value="{{ $unit->id }}" @selected((string) old('unit_id', auth()->user()->unit_id) === (string) $unit->id)>
+                                {{ $unit->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1 text-xs text-gray-400">Defaults to your assigned station — change it if this report is filed on behalf of another unit.</p>
+                    @error('unit_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+
                 {{-- 2. Dynamic fields: one block per report type, Alpine shows the chosen one.
                        NOTHING here is hardcoded — labels, keys, required, and input type
                        all come from template_fields.

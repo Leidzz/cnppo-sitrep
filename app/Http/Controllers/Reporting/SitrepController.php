@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSitrepRequest;
 use App\Models\ReportType;
 use App\Models\Sitrep;
+use App\Models\Unit;
 use App\Services\AttachmentService;
 use App\Services\SitrepWorkflowService;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,7 @@ class SitrepController extends Controller
 
         return view('reporting.sitreps.create', [
             'reportTypes' => $reportTypes,
+            'units' => Unit::orderBy('name')->get(),   // station selector (client-confirmed)
         ]);
     }
 
@@ -43,6 +45,7 @@ class SitrepController extends Controller
                 'location_captured_at',
                 'location_description',
             ]),
+            unitId: $request->filled('unit_id') ? $request->integer('unit_id') : null,
         );
 
         if ($request->hasFile('photos')) {
@@ -113,6 +116,7 @@ class SitrepController extends Controller
         return view('reporting.sitreps.edit', [
             'sitrep' => $sitrep->load('currentStatus'),
             'reportTypes' => $reportTypes,
+            'units' => Unit::orderBy('name')->get(),   // station selector (correctable)
         ]);
     }
 
@@ -138,6 +142,7 @@ class SitrepController extends Controller
                 'location_description',
             ]),
             action: $request->string('action')->toString(),
+            unitId: $request->filled('unit_id') ? $request->integer('unit_id') : null,
         );
 
         if ($request->hasFile('photos')) {

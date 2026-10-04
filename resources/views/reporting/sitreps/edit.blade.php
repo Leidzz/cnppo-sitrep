@@ -31,6 +31,23 @@
                 </p>
             </div>
 
+            {{-- Filing station: correctable while the report is editable
+                 (client-confirmed station selection). Defaults to the
+                 station the report was filed under. --}}
+            <div class="mb-6">
+                <label for="unit_id" class="block text-sm font-medium text-gray-700">
+                    Police Station / Unit <span class="text-red-600">*</span>
+                </label>
+                <select id="unit_id" name="unit_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 min-h-[44px]">
+                    @foreach ($units as $unit)
+                        <option value="{{ $unit->id }}" @selected((string) old('unit_id', $sitrep->unit_id) === (string) $unit->id)>
+                            {{ $unit->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('unit_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+            </div>
+
             {{-- PUT method required by Laravel for updates; enctype REQUIRED
                  for file uploads; report type travels as a hidden input --}}
             <form method="POST" action="{{ route('reporting.sitreps.update', $sitrep) }}" enctype="multipart/form-data">

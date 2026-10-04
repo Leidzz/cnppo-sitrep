@@ -20,17 +20,20 @@ class SitrepWorkflowService
      * If $action is 'submit', immediately transition Draft -> Submitted.
      * Wrapped in a DB transaction: either the SITREP + audit entries all
      * persist, or nothing does — no half-saved reports.
+     *
+     * $unitId: client-confirmed — the officer may file under a DIFFERENT
+     * station than their own; null falls back to the officer's unit.
      */
-    public function create(User $user, ReportType $reportType, array $dynamicFields, string $action, array $location = []): Sitrep
+    public function create(User $user, ReportType $reportType, array $dynamicFields, string $action, array $location = [], ?int $unitId = null): Sitrep
     {
-        return DB::transaction(function () use ($user, $reportType, $dynamicFields, $action, $location) {
+        return DB::transaction(function () use ($user, $reportType, $dynamicFields, $action, $location, $unitId) {
             // Filter out nulls AND empty strings so untouched hidden fields
             // never hit the database as '' (which would fail datetime columns).
             $location = array_filter($location, fn ($v) => $v !== null && $v !== '');
 
             $sitrep = Sitrep::create(array_merge([
                 'reference_number' => $this->generateReferenceNumber(),
-                'unit_id' => $user->unit_id,
+                'unit_id' => $unitId ?? $user->unit_id,   // ← selector override, else own unit
                 'report_type_id' => $reportType->id,
                 'current_status_id' => $this->statusId('Draft'),
                 'created_by' => $user->id,
@@ -125,10 +128,12 @@ class SitrepWorkflowService
      * - On submit: performs the correct transition (Draft -> Submitted, or
      *   Returned for Correction -> Submitted after corrections) — still
      *   validated against status_transitions inside transition()
+     * $unitId: station attribution is correctable while editable; null keeps
+     * the report's current station.
      */
-    public function updateDraft(Sitrep $sitrep, User $user, array $dynamicFields, array $location, string $action): Sitrep
+    public function updateDraft(Sitrep $sitrep, User $user, array $dynamicFields, array $location, string $action, ?int $unitId = null): Sitrep
     {
-        return DB::transaction(function () use ($sitrep, $user, $dynamicFields, $location, $action) {
+        return DB::transaction(function () use ($sitrep, $user, $dynamicFields, $location, $action, $unitId) {
             $statusName = $sitrep->currentStatus->name;
 
             abort_unless(
@@ -139,7 +144,10 @@ class SitrepWorkflowService
 
             $location = array_filter($location, fn ($v) => $v !== null && $v !== '');
 
-            $sitrep->update(array_merge(['dynamic_fields' => $dynamicFields], $location));
+            $sitrep->update(array_merge([
+                'dynamic_fields' => $dynamicFields,
+                'unit_id' => $unitId ?? $sitrep->unit_id,   // ← correctable on edit
+            ], $location));
 
             $this->log($sitrep, $user, 'updated', $statusName, $statusName, 'Report content updated.');
 

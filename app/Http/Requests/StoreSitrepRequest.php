@@ -36,6 +36,10 @@ class StoreSitrepRequest extends FormRequest
             'action' => ['required', 'in:draft,submit'],
             'dynamic_fields' => ['nullable', 'array'],
 
+            // Filing station: officer may file for another of the 14 units
+            // (client-confirmed). Defaults to the officer's own unit when absent.
+            'unit_id' => ['nullable', 'exists:units,id'],
+
             // GPS / location documentation (spec Section 7 — all OPTIONAL)
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],

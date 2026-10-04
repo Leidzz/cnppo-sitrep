@@ -67,7 +67,7 @@ it('notifications page lists items and marks all read', function () {
     $this->actingAs($user)->get(route('notifications.index'))
         ->assertOk()
         ->assertSee('Hello')
-        ->assertSee('unread');;
+        ->assertSee('unread');
 
     $this->actingAs($user)->post(route('notifications.readAll'))
         ->assertRedirect(route('notifications.index'));

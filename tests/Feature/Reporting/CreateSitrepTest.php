@@ -202,3 +202,42 @@ it('rejects more than five photos', function () {
         'photos' => $photos,
     ])->assertSessionHasErrors(['photos']);
 });
+
+it('stores the officer-selected station when filing for another unit', function () {
+    $user = makeReporter();
+    $otherUnit = Unit::skip(2)->first();   // a station that is NOT the officer's
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs($user)->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'unit_id' => $otherUnit->id,
+        'dynamic_fields' => [],
+    ])->assertRedirect(route('reporting.dashboard'));
+
+    expect(Sitrep::sole()->unit_id)->toBe($otherUnit->id);
+});
+
+it('falls back to the officers own unit when no station is selected', function () {
+    $user = makeReporter();
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs($user)->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'dynamic_fields' => [],
+    ])->assertRedirect(route('reporting.dashboard'));
+
+    expect(Sitrep::sole()->unit_id)->toBe($user->unit_id);
+});
+
+it('rejects a station that does not exist', function () {
+    $checkpoint = ReportType::where('name', 'Checkpoint')->first();
+
+    $this->actingAs(makeReporter())->post(route('reporting.sitreps.store'), [
+        'report_type_id' => $checkpoint->id,
+        'action' => 'draft',
+        'unit_id' => 99999,
+        'dynamic_fields' => [],
+    ])->assertSessionHasErrors(['unit_id']);
+});
