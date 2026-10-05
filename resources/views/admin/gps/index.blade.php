@@ -79,7 +79,7 @@
                 </div>
                 <div class="divide-y divide-gray-100">
                     @forelse ($points as $point)
-                        <div class="flex items-start justify-between gap-3 px-5 py-3.5">
+                        <div class="flex items-center justify-between gap-3 px-5 py-3.5">
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-gray-900">{{ $point->label }}</p>
                                 <p class="text-xs text-gray-500">{{ $point->latitude }}, {{ $point->longitude }} · {{ $point->observations_count }} observation(s)</p>
@@ -87,12 +87,19 @@
                                     <p class="mt-0.5 text-xs text-gray-400">{{ $point->description }}</p>
                                 @endif
                             </div>
-                            <form method="POST" action="{{ route('admin.gps.points.destroy', $point) }}"
-                                  onsubmit="return confirm('Delete this reference point?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-xs font-semibold text-red-600 hover:underline">Delete</button>
-                            </form>
+                            {{-- Actions: Record (primary) + Delete --}}
+                            <div class="flex items-center gap-2 shrink-0">
+                                <a href="{{ route('admin.gps.capture', $point) }}"
+                                   class="min-h-[44px] inline-flex items-center px-4 rounded-lg bg-blue-700 text-white text-sm font-semibold hover:bg-blue-800">
+                                    Record
+                                </a>
+                                <form method="POST" action="{{ route('admin.gps.points.destroy', $point) }}"
+                                      onsubmit="return confirm('Delete this reference point?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="min-h-[44px] px-2 text-xs font-semibold text-red-600 hover:underline">Delete</button>
+                                </form>
+                            </div>
                         </div>
                     @empty
                         <div class="px-5 py-8"><x-empty-state>No reference points yet — add the first one above.</x-empty-state></div>

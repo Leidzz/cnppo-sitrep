@@ -57,3 +57,45 @@ it('refuses to delete a point that has observations', function () {
     $this->actingAs(admin())->delete(route('admin.gps.points.destroy', $point))
         ->assertStatus(422);
 });
+
+it('lets admins record an observation via the JSON endpoint', function () {
+    $point = ReferencePoint::create(['label' => 'P1', 'latitude' => 14.1, 'longitude' => 122.9]);
+
+    $res = $this->actingAs(admin())->postJson(route('admin.gps.observations.store', $point), [
+        'latitude' => 14.1, 'longitude' => 122.9,
+        'accuracy' => 5.5, 'device_timestamp' => now()->toIso8601String(),
+        'device_label' => 'Test Phone', 'conditions' => 'outdoor',
+    ]);
+
+    $res->assertOk()->assertJsonPath('error', 0);
+    expect($point->observations()->sole()->device_label)->toBe('Test Phone');
+});
+
+it('forbids non-admins from recording observations', function () {
+    $point = ReferencePoint::create(['label' => 'P1', 'latitude' => 14.1, 'longitude' => 122.9]);
+
+    $this->actingAs(User::factory()->create(['unit_id' => Unit::first()->id])
+        ->assignRole('reporting-personnel'))
+        ->postJson(route('admin.gps.observations.store', $point), [
+            'latitude' => 14.1, 'longitude' => 122.9, 'device_timestamp' => now()->toIso8601String(),
+        ])
+        ->assertForbidden();
+});
+
+it('validates observation coordinates', function () {
+    $point = ReferencePoint::create(['label' => 'P1', 'latitude' => 14.1, 'longitude' => 122.9]);
+
+    $this->actingAs(admin())->postJson(route('admin.gps.observations.store', $point), [
+        'latitude' => 999, 'longitude' => 14.1, 'device_timestamp' => now()->toIso8601String(),
+    ])->assertUnprocessable();
+});
+
+it('shows the capture screen with live stats', function () {
+    $point = ReferencePoint::create(['label' => 'Flagpole', 'latitude' => 14.1, 'longitude' => 122.9]);
+
+    $this->actingAs(admin())
+        ->get(route('admin.gps.capture', $point))
+        ->assertOk()
+        ->assertSee('Flagpole')
+        ->assertSee('Capture & Record');
+});

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ReferencePoint;
+use App\Services\GpsObservationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -44,5 +46,41 @@ class AdminGpsController extends Controller
 
         return redirect()->route('admin.gps.index')
             ->with('status', 'Reference point deleted.');
+    }
+
+    /**
+     * Mobile capture screen: stand at the point, record repeatedly.
+     */
+    public function capture(ReferencePoint $referencePoint): View
+    {
+        return view('admin.gps.capture', [
+            'point' => $referencePoint,
+            'stats' => app(GpsObservationService::class)->stats($referencePoint),
+            'recent' => $referencePoint->observations()->latest('id')->limit(10)->get(),
+        ]);
+    }
+
+    /**
+     * Record ONE observation (JSON — called repeatedly from the capture page).
+     * The service computes the positional error in the same transaction.
+     */
+    public function record(Request $request, ReferencePoint $referencePoint, GpsObservationService $service): JsonResponse
+    {
+        $validated = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'accuracy' => ['nullable', 'numeric', 'gt:0'],
+            'device_timestamp' => ['required', 'date'],
+            'device_label' => ['nullable', 'string', 'max:100'],
+            'conditions' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $observation = $service->record($referencePoint, $request->user(), $validated);
+
+        return response()->json([
+            'id' => $observation->id,
+            'error' => $observation->computed_error_meters,
+            'stats' => $service->stats($referencePoint),
+        ]);
     }
 }

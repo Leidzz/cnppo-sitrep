@@ -93,6 +93,10 @@ Route::middleware(['auth', 'verified', 'role:administrator'])->group(function ()
         ->name('admin.gps.points.store');
     Route::delete('/admin/gps/points/{referencePoint}', [AdminGpsController::class, 'destroyPoint'])
         ->name('admin.gps.points.destroy');
+    Route::get('/admin/gps/points/{referencePoint}/capture', [AdminGpsController::class, 'capture'])
+        ->name('admin.gps.capture');
+    Route::post('/admin/gps/points/{referencePoint}/observations', [AdminGpsController::class, 'record'])
+        ->name('admin.gps.observations.store');
 });
 
 require __DIR__.'/auth.php';
