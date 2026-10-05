@@ -44,6 +44,7 @@
             ],
             'administrator' => [
                 ['label' => 'GPS Accuracy Study', 'route' => 'admin.gps.index', 'icon' => 'pin', 'match' => 'admin.gps.*'],
+                ['label' => 'Study Results', 'route' => 'admin.gps.results', 'icon' => 'chart', 'match' => 'admin.gps.results'],
             ],
         ];
         $menu = collect($menus)->first(fn ($items, $role) => $user->hasRole($role)) ?? [];
