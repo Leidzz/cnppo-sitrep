@@ -97,5 +97,42 @@ it('shows the capture screen with live stats', function () {
         ->get(route('admin.gps.capture', $point))
         ->assertOk()
         ->assertSee('Flagpole')
-        ->assertSee('Capture & Record', false);   // ← false: match raw HTML (&amp; in source)
+        ->assertSee('Capture & Record', false);
+});
+
+it('shows the results dashboard with per-point stats', function () {
+    $point = ReferencePoint::create(['label' => 'Flagpole', 'latitude' => 14.1, 'longitude' => 122.9]);
+
+    app(GpsObservationService::class)->record($point, admin(), [
+        'latitude' => 14.1, 'longitude' => 122.9,
+        'device_timestamp' => now(),
+    ]);
+
+    $this->actingAs(admin())
+        ->get(route('admin.gps.results'))
+        ->assertOk()
+        ->assertSee('Flagpole')
+        ->assertSee('Mean (m)');
+});
+
+it('exports observations as CSV', function () {
+    $point = ReferencePoint::create(['label' => 'Flagpole', 'latitude' => 14.1, 'longitude' => 122.9]);
+
+    app(GpsObservationService::class)->record($point, admin(), [
+        'latitude' => 14.1, 'longitude' => 122.9,
+        'device_timestamp' => now(), 'device_label' => 'Test Phone',
+    ]);
+
+    $res = $this->actingAs(admin())->get(route('admin.gps.export'));
+
+    $res->assertOk();
+    expect($res->streamedContent())->toContain('Flagpole')->toContain('Test Phone');
+});
+
+it('forbids non-admins from results and export', function () {
+    $officer = User::factory()->create(['unit_id' => Unit::first()->id])
+        ->assignRole('reporting-personnel');
+
+    $this->actingAs($officer)->get(route('admin.gps.results'))->assertForbidden();
+    $this->actingAs($officer)->get(route('admin.gps.export'))->assertForbidden();
 });

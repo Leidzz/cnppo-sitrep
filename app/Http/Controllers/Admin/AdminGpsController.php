@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\GpsObservation;
 use App\Models\ReferencePoint;
 use App\Services\GpsObservationService;
 use Illuminate\Http\JsonResponse;
@@ -81,6 +82,58 @@ class AdminGpsController extends Controller
             'id' => $observation->id,
             'error' => $observation->computed_error_meters,
             'stats' => $service->stats($referencePoint),
+        ]);
+    }
+
+    /**
+     * Results dashboard — per-point statistics (the thesis results table).
+     */
+    public function results(GpsObservationService $service): View
+    {
+        $points = ReferencePoint::orderBy('label')->get()
+            ->map(fn (ReferencePoint $p) => array_merge(['point' => $p], $service->stats($p)));
+
+        return view('admin.gps.results', compact('points'));
+    }
+
+    /**
+     * CSV export of ALL raw observations — for Excel/SPSS analysis.
+     * One row per observation, reference coordinates included so error
+     * can be re-derived independently (research reproducibility).
+     */
+    public function export()
+    {
+        $observations = GpsObservation::with('referencePoint')
+            ->orderBy('reference_point_id')->orderBy('id')->get();
+
+        $callback = function () use ($observations) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, [
+                'point_label', 'reference_lat', 'reference_lng',
+                'captured_lat', 'captured_lng', 'error_meters',
+                'device_accuracy_meters', 'device_label', 'conditions',
+                'device_timestamp', 'server_received_at',
+            ]);
+            foreach ($observations as $o) {
+                fputcsv($out, [
+                    $o->referencePoint->label,
+                    $o->referencePoint->latitude,
+                    $o->referencePoint->longitude,
+                    $o->captured_latitude,
+                    $o->captured_longitude,
+                    $o->computed_error_meters,
+                    $o->device_accuracy_meters,
+                    $o->device_label,
+                    $o->conditions,
+                    $o->device_timestamp,
+                    $o->server_received_at,
+                ]);
+            }
+            fclose($out);
+        };
+
+        return response()->streamDownload($callback, 'gps-observations-'.now()->format('Ymd-His').'.csv', [
+            'Content-Type' => 'text/csv',
         ]);
     }
 }

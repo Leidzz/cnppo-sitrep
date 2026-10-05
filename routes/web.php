@@ -97,6 +97,10 @@ Route::middleware(['auth', 'verified', 'role:administrator'])->group(function ()
         ->name('admin.gps.capture');
     Route::post('/admin/gps/points/{referencePoint}/observations', [AdminGpsController::class, 'record'])
         ->name('admin.gps.observations.store');
+    Route::get('/admin/gps/results', [AdminGpsController::class, 'results'])
+        ->name('admin.gps.results');
+    Route::get('/admin/gps/export', [AdminGpsController::class, 'export'])
+        ->name('admin.gps.export');
 });
 
 require __DIR__.'/auth.php';
