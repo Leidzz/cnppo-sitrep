@@ -97,5 +97,5 @@ it('shows the capture screen with live stats', function () {
         ->get(route('admin.gps.capture', $point))
         ->assertOk()
         ->assertSee('Flagpole')
-        ->assertSee('Capture & Record');
+        ->assertSee('Capture & Record', false);   // ← false: match raw HTML (&amp; in source)
 });

@@ -3,6 +3,16 @@
         <h2 class="text-lg font-semibold text-white truncate">Record Observations</h2>
     </x-slot>
 
+    @php
+        // Precompute OUTSIDE the @json directive — multiline arrow functions
+        // inside directive arguments break Blade's balanced-paren parser.
+        $recentJson = $recent->map(fn ($o) => [
+            'id' => $o->id,
+            'error' => $o->computed_error_meters,
+            'time' => $o->created_at->format('g:i:s A'),
+        ])->values();
+    @endphp
+
     <div class="px-4 py-6 sm:px-6 lg:px-8">
         <div class="max-w-xl mx-auto" x-data="captureTool({{ $point->id }})">
 
@@ -79,11 +89,7 @@
                 count: {{ $stats['count'] ?? 0 }},
                 mean: {{ $stats['count'] ? $stats['mean'] : 'null' }},
                 lastError: null,
-                recent: @json($recent->map(fn ($o) => [
-                    'id' => $o->id,
-                    'error' => $o->computed_error_meters,
-                    'time' => $o->created_at->format('g:i:s A'),
-                ])->values()),
+                recent: @json($recentJson),
                 locating: false,
                 saving: false,
                 error: null,
