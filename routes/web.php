@@ -13,9 +13,7 @@ use App\Http\Controllers\Reporting\DashboardController;
 use App\Http\Controllers\Reporting\SitrepController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', fn () => redirect()->route('login'));
 
 Route::get('/dashboard', function () {
     if (auth()->user()->hasRole('reporting-personnel')) {
