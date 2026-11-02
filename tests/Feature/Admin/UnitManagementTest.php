@@ -50,7 +50,7 @@ it('lets admins rename a unit', function () {
 });
 
 it('refuses to delete a unit that has users', function () {
-    $unit = Unit::first();   // seeded units have users? create one explicitly to be safe
+    $unit = Unit::first();
     User::factory()->create(['unit_id' => $unit->id]);
 
     $this->actingAs(sysAdmin())->delete(route('admin.units.destroy', $unit))->assertStatus(422);
@@ -63,6 +63,16 @@ it('deletes an empty unit', function () {
         ->assertRedirect(route('admin.units.index'));
 
     expect(Unit::where('code', 'EMPTY-1')->exists())->toBeFalse();
+});
+
+it('shows the units list with usage counts', function () {
+    $unit = Unit::first();
+    User::factory()->create(['unit_id' => $unit->id]);
+
+    $this->actingAs(sysAdmin())
+        ->get(route('admin.units.index'))
+        ->assertOk()
+        ->assertSee($unit->name);
 });
 
 it('forbids non-admins from units management', function () {
