@@ -24,7 +24,11 @@ Route::get('/dashboard', function () {
         return redirect()->route('command.dashboard');
     }
 
-    return view('dashboard');
+    if (auth()->user()->hasRole('administrator')) {
+        return redirect()->route('admin.dashboard');
+    }
+
+    return view('dashboard');   // fallback — now unreachable for all three roles
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 // CHANGED: 'active' added — deactivated accounts are locked out everywhere

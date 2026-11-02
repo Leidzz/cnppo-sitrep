@@ -93,9 +93,11 @@
                 @endforeach
             </nav>
 
-            {{-- Footer tagline --}}
+           {{-- Footer: version badge instead of the tagline --}}
             <div class="px-5 py-4 border-t border-white/10">
-                <p class="text-[11px] leading-relaxed text-white/50 italic">"Sa Ligtas na Bayan, Sama-samang Kilos ay Katulad."</p>
+                <div class="h-0.5 w-8 bg-amber-400 mb-2"></div>
+                <p class="text-[10px] tracking-wider text-white/40">WEB-BASED SITREP SYSTEM</p>
+                <p class="text-[10px] text-white/25">CNPPO · v1.0</p>
             </div>
         </aside>
 
