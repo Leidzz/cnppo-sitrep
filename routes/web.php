@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminGpsController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\Command\DashboardController as CommandDashboardController;
 use App\Http\Controllers\Command\SitrepController as CommandSitrepController;
@@ -26,7 +28,8 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+// CHANGED: 'active' added — deactivated accounts are locked out everywhere
+Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -47,16 +50,19 @@ Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(funct
 
     Route::get('/reporting/sitreps/create', [SitrepController::class, 'create'])
         ->name('reporting.sitreps.create');
+
     Route::post('/reporting/sitreps', [SitrepController::class, 'store'])
         ->name('reporting.sitreps.store');
 
     Route::get('/reporting/sitreps', [SitrepController::class, 'index'])
         ->name('reporting.sitreps.index');
+
     Route::get('/reporting/sitreps/{sitrep}', [SitrepController::class, 'show'])
         ->name('reporting.sitreps.show');
 
     Route::get('/reporting/sitreps/{sitrep}/edit', [SitrepController::class, 'edit'])
         ->name('reporting.sitreps.edit');
+
     Route::put('/reporting/sitreps/{sitrep}', [SitrepController::class, 'update'])
         ->name('reporting.sitreps.update');
 });
@@ -87,18 +93,36 @@ Route::middleware(['auth', 'verified', 'role:command-center'])->group(function (
 
 // Administrator section — configuration + GPS accuracy study
 Route::middleware(['auth', 'verified', 'role:administrator'])->group(function () {
+    // NEW (Phase 4 Step 1): admin dashboard + user management
+    Route::get('/admin/dashboard', AdminDashboardController::class)
+        ->name('admin.dashboard');
+    Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::get('/admin/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
+    Route::post('/admin/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+    Route::get('/admin/users/{user}/edit', [AdminUserController::class, 'edit'])->name('admin.users.edit');
+    Route::put('/admin/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
+    Route::post('/admin/users/{user}/toggle-active', [AdminUserController::class, 'toggleActive'])
+        ->name('admin.users.toggleActive');
+
+    // GPS study (Phase 5)
     Route::get('/admin/gps', [AdminGpsController::class, 'index'])
         ->name('admin.gps.index');
+
     Route::post('/admin/gps/points', [AdminGpsController::class, 'storePoint'])
         ->name('admin.gps.points.store');
+
     Route::delete('/admin/gps/points/{referencePoint}', [AdminGpsController::class, 'destroyPoint'])
         ->name('admin.gps.points.destroy');
+
     Route::get('/admin/gps/points/{referencePoint}/capture', [AdminGpsController::class, 'capture'])
         ->name('admin.gps.capture');
+
     Route::post('/admin/gps/points/{referencePoint}/observations', [AdminGpsController::class, 'record'])
         ->name('admin.gps.observations.store');
+
     Route::get('/admin/gps/results', [AdminGpsController::class, 'results'])
         ->name('admin.gps.results');
+
     Route::get('/admin/gps/export', [AdminGpsController::class, 'export'])
         ->name('admin.gps.export');
 });

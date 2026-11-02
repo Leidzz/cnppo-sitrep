@@ -43,8 +43,8 @@
                 ['label' => 'Map View', 'route' => 'command.map', 'icon' => 'pin', 'match' => 'command.map*'],
             ],
             'administrator' => [
-                // Explicit list (NOT a wildcard): 'admin.gps.*' matched RESULTS too,
-                // so both items highlighted. Only the study-workflow routes count here.
+                ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'icon' => 'home', 'match' => 'admin.dashboard'],
+                ['label' => 'Users', 'route' => 'admin.users.index', 'icon' => 'user', 'match' => 'admin.users.*'],
                 ['label' => 'GPS Accuracy Study', 'route' => 'admin.gps.index', 'icon' => 'pin',
                  'match' => ['admin.gps.index', 'admin.gps.points.*', 'admin.gps.capture', 'admin.gps.observations.*']],
                 ['label' => 'Study Results', 'route' => 'admin.gps.results', 'icon' => 'chart', 'match' => 'admin.gps.results'],
