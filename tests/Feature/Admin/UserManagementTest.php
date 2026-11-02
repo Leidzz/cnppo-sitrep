@@ -62,3 +62,9 @@ it('forbids non-admins from user management', function () {
 
     $this->actingAs($officer)->get(route('admin.users.index'))->assertForbidden();
 });
+
+it('DEBUG factory is_active value', function () {
+    $u = User::factory()->create();
+    dump($u->getAttributes()['is_active'] ?? 'KEY MISSING');
+    $this->assertTrue(true);
+});

@@ -44,7 +44,7 @@ Route::middleware(['auth', 'active'])->group(function () {
 });
 
 // Reporting Personnel section
-Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(function () {
+Route::middleware(['auth', 'verified', 'active', 'role:reporting-personnel'])->group(function () {
     Route::get('/reporting/dashboard', DashboardController::class)
         ->name('reporting.dashboard');
 
@@ -68,7 +68,7 @@ Route::middleware(['auth', 'verified', 'role:reporting-personnel'])->group(funct
 });
 
 // Command Center section — province-wide review
-Route::middleware(['auth', 'verified', 'role:command-center'])->group(function () {
+Route::middleware(['auth', 'verified', 'active', 'role:command-center'])->group(function () {
     Route::get('/command/dashboard', CommandDashboardController::class)
         ->name('command.dashboard');
 
@@ -92,7 +92,7 @@ Route::middleware(['auth', 'verified', 'role:command-center'])->group(function (
 });
 
 // Administrator section — configuration + GPS accuracy study
-Route::middleware(['auth', 'verified', 'role:administrator'])->group(function () {
+Route::middleware(['auth', 'verified', 'active', 'role:administrator'])->group(function () {
     // NEW (Phase 4 Step 1): admin dashboard + user management
     Route::get('/admin/dashboard', AdminDashboardController::class)
         ->name('admin.dashboard');

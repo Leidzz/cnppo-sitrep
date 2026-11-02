@@ -14,7 +14,7 @@ class EnsureUserIsActive
      */
     public function handle(Request $request, Closure $next): Response
     {
-        abort_unless($request->user()->is_active, 403, 'Account deactivated. Contact your administrator.');
+        abort_if($request->user()->is_active === false, 403, 'Account deactivated. Contact your administrator.');
 
         return $next($request);
     }
