@@ -45,6 +45,7 @@
             'administrator' => [
                 ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'icon' => 'home', 'match' => 'admin.dashboard'],
                 ['label' => 'Users', 'route' => 'admin.users.index', 'icon' => 'user', 'match' => 'admin.users.*'],
+                ['label' => 'Units', 'route' => 'admin.units.index', 'icon' => 'pin', 'match' => 'admin.units.*'],
                 ['label' => 'GPS Accuracy Study', 'route' => 'admin.gps.index', 'icon' => 'pin',
                  'match' => ['admin.gps.index', 'admin.gps.points.*', 'admin.gps.capture', 'admin.gps.observations.*']],
                 ['label' => 'Study Results', 'route' => 'admin.gps.results', 'icon' => 'chart', 'match' => 'admin.gps.results'],

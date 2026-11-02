@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminGpsController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\UnitController as AdminUnitController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\Command\DashboardController as CommandDashboardController;
@@ -103,6 +104,13 @@ Route::middleware(['auth', 'verified', 'active', 'role:administrator'])->group(f
     Route::put('/admin/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
     Route::post('/admin/users/{user}/toggle-active', [AdminUserController::class, 'toggleActive'])
         ->name('admin.users.toggleActive');
+
+    // NEW (Step 2) — Units / Stations
+    Route::get('/admin/units', [AdminUnitController::class, 'index'])->name('admin.units.index');
+    Route::post('/admin/units', [AdminUnitController::class, 'store'])->name('admin.units.store');
+    Route::get('/admin/units/{unit}/edit', [AdminUnitController::class, 'edit'])->name('admin.units.edit');
+    Route::put('/admin/units/{unit}', [AdminUnitController::class, 'update'])->name('admin.units.update');
+    Route::delete('/admin/units/{unit}', [AdminUnitController::class, 'destroy'])->name('admin.units.destroy');
 
     // GPS study (Phase 5)
     Route::get('/admin/gps', [AdminGpsController::class, 'index'])
