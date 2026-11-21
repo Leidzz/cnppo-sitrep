@@ -10,9 +10,9 @@
 <div {{ $attributes->merge(['class' => 'flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between']) }}>
     <div class="min-w-0 flex-1">
         @if ($eyebrow)
-            <p class="text-xs font-semibold uppercase tracking-wider text-gold-600">{{ $eyebrow }}</p>
+            <p class="text-xs font-semibold uppercase tracking-wider text-gold-600 dark:text-gold-400">{{ $eyebrow }}</p>
         @endif
-        <h1 class="mt-1 text-2xl font-bold tracking-tight text-navy-900">{{ $title }}</h1>
+        <h1 class="mt-1 text-2xl font-bold tracking-tight text-navy-900 dark:text-white">{{ $title }}</h1>
         <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
             @if ($subtitle)
                 <span>{{ $subtitle }}</span>

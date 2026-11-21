@@ -1,20 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Emit hover:/focus:/has-[]:/dark: variants HERE (Tailwind's default is the
+   very end of the file), so the dark-mode compatibility layer at the bottom
+   comes after them and can override light-theme hover/selected colors. */
+@tailwind variants;
 
 @layer base {
     /* Keyboard users get a clear focus ring; mouse clicks don't flash one. */
     :focus-visible {
-        @apply outline-none ring-2 ring-gold-400 ring-offset-2 ring-offset-white;
+        @apply outline-none ring-2 ring-gold-400 ring-offset-2 ring-offset-white dark:ring-offset-navy-950;
     }
 
     [x-cloak] {
         display: none !important;
     }
+
+    html.dark {
+        color-scheme: dark; /* native scrollbars, date pickers and selects go dark too */
+    }
+
+    /* Plain `border` uses Tailwind's default (light gray) border color, which
+       glows white on dark backgrounds. :where() keeps this at zero
+       specificity so any explicit border-* utility still wins. */
+    :where(.dark) *,
+    :where(.dark) ::before,
+    :where(.dark) ::after {
+        border-color: rgba(255, 255, 255, 0.10);
+    }
 }
 
 @layer components {
-    /* Entrance animation used across pages (moved here from the layout). */
+    /* Entrance animation used across pages. */
     .anim-rise {
         animation: rise 0.45s cubic-bezier(0.22, 0.9, 0.35, 1) both;
     }
@@ -24,7 +41,7 @@
         @apply absolute inset-0 flex items-end gap-2 px-2 pb-6 transition-opacity duration-300;
     }
     .chart-skeleton > span {
-        @apply flex-1 rounded-t bg-navy-100 animate-pulse;
+        @apply flex-1 rounded-t bg-navy-100 animate-pulse dark:bg-white/5;
     }
     [data-chart-body][data-ready] .chart-skeleton {
         @apply opacity-0 pointer-events-none;
@@ -49,7 +66,8 @@
 }
 
 /* Print: clean one-column briefing copy. Sidebar, top bar and controls hide
-   via the print:hidden utility; this handles what utilities can't. */
+   via the print:hidden utility. Dark mode is switched off for printing in
+   layouts/app.blade.php (beforeprint/afterprint). */
 @media print {
     @page {
         margin: 12mm;
@@ -67,3 +85,101 @@
         box-shadow: none !important;
     }
 }
+
+/* =====================================================================
+   DARK MODE COMPATIBILITY LAYER
+
+   The layout, shared components and dashboards use proper `dark:`
+   variants. Older pages (forms, tables, lists) were written with plain
+   light-theme utilities. Instead of editing every view, the rules below
+   remap the most common light utilities when <html> has the `dark`
+   class.
+
+   New code should use `dark:` variants instead of relying on this.
+
+   Why it sits OUTSIDE @layer and uses :where(.dark):
+   - Inside a Tailwind layer, these class names would also get `dark:`
+     variants generated, overriding real `dark:` utilities.
+   - :where() has zero specificity, so `:where(.dark) .bg-white` ties with
+     `.bg-white` (and wins by coming later), while any real `dark:` utility
+     (`.dark\:x:is(.dark *)`) is more specific and always wins.
+   ===================================================================== */
+
+/* Surfaces */
+:where(.dark) .bg-white { background-color: #111A2E; }
+:where(.dark) .bg-canvas,
+:where(.dark) .bg-gray-50, :where(.dark) .bg-slate-50 { background-color: #0F1729; }
+:where(.dark) .bg-gray-100, :where(.dark) .bg-slate-100 { background-color: #1A2540; }
+:where(.dark) .bg-slate-50\/60 { background-color: rgba(255, 255, 255, 0.02); }
+:where(.dark) .bg-gray-200 { background-color: #22304F; }
+:where(.dark) .bg-navy-50 { background-color: rgba(148, 166, 200, 0.10); }
+:where(.dark) .hover\:bg-gray-50:hover, :where(.dark) .hover\:bg-slate-50:hover,
+:where(.dark) .hover\:bg-gray-100:hover, :where(.dark) .hover\:bg-slate-100:hover { background-color: rgba(255, 255, 255, 0.05); }
+:where(.dark) .hover\:bg-white:hover { background-color: #1A2540; }
+
+/* Text */
+:where(.dark) .text-gray-900, :where(.dark) .text-slate-900,
+:where(.dark) .text-navy-900, :where(.dark) .text-navy-800, :where(.dark) .text-black { color: #F1F5FB; }
+:where(.dark) .text-gray-800, :where(.dark) .text-slate-800,
+:where(.dark) .text-gray-700, :where(.dark) .text-slate-700 { color: #D5DDEA; }
+:where(.dark) .text-gray-600, :where(.dark) .text-slate-600, :where(.dark) .text-navy-700, :where(.dark) .text-navy-600 { color: #B4C0D4; }
+:where(.dark) .text-gray-500, :where(.dark) .text-slate-500 { color: #94A3B8; }
+:where(.dark) .text-gray-400, :where(.dark) .text-slate-400 { color: #7B8AA3; }
+:where(.dark) .text-gray-300, :where(.dark) .text-slate-300 { color: #5B6A84; }
+:where(.dark) .hover\:text-gray-900:hover, :where(.dark) .hover\:text-navy-900:hover,
+:where(.dark) .hover\:text-gray-800:hover, :where(.dark) .hover\:text-gray-700:hover { color: #FFFFFF; }
+
+/* Borders, dividers, rings */
+:where(.dark) .border-gray-100, :where(.dark) .border-slate-100,
+:where(.dark) .border-gray-200, :where(.dark) .border-slate-200 { border-color: rgba(255, 255, 255, 0.08); }
+:where(.dark) .border-gray-300, :where(.dark) .border-slate-300 { border-color: rgba(255, 255, 255, 0.14); }
+:where(.dark) .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+:where(.dark) .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+:where(.dark) .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(255, 255, 255, 0.07); }
+:where(.dark) .ring-slate-200, :where(.dark) .ring-gray-300 { --tw-ring-color: rgba(255, 255, 255, 0.12); }
+:where(.dark) .hover\:border-slate-300:hover, :where(.dark) .hover\:border-gray-300:hover { border-color: rgba(255, 255, 255, 0.22); }
+
+/* Tinted status surfaces: keep the hue, drop the brightness */
+:where(.dark) .bg-red-50, :where(.dark) .bg-red-100, :where(.dark) .bg-red-50\/40 { background-color: rgba(220, 38, 38, 0.14); }
+:where(.dark) .bg-green-50, :where(.dark) .bg-green-100 { background-color: rgba(22, 163, 74, 0.14); }
+:where(.dark) .bg-blue-50, :where(.dark) .bg-blue-100, :where(.dark) .bg-blue-50\/50 { background-color: rgba(37, 99, 235, 0.16); }
+:where(.dark) .bg-amber-50, :where(.dark) .bg-amber-100 { background-color: rgba(217, 119, 6, 0.16); }
+:where(.dark) .text-red-700, :where(.dark) .text-red-800, :where(.dark) .text-red-900, :where(.dark) .text-red-600 { color: #FCA5A5; }
+:where(.dark) .text-green-700, :where(.dark) .text-green-800, :where(.dark) .text-green-600 { color: #86EFAC; }
+:where(.dark) .text-blue-700, :where(.dark) .text-blue-800, :where(.dark) .text-blue-900 { color: #93C5FD; }
+:where(.dark) .text-amber-700, :where(.dark) .text-amber-800 { color: #FCD34D; }
+:where(.dark) .border-red-100, :where(.dark) .border-red-200, :where(.dark) .ring-red-100, :where(.dark) .ring-red-200 { border-color: rgba(248, 113, 113, 0.25); --tw-ring-color: rgba(248, 113, 113, 0.25); }
+:where(.dark) .border-green-200, :where(.dark) .ring-green-100, :where(.dark) .ring-green-200 { border-color: rgba(74, 222, 128, 0.22); --tw-ring-color: rgba(74, 222, 128, 0.22); }
+:where(.dark) .border-blue-200, :where(.dark) .ring-blue-100, :where(.dark) .ring-blue-200 { border-color: rgba(96, 165, 250, 0.25); --tw-ring-color: rgba(96, 165, 250, 0.25); }
+:where(.dark) .border-amber-200, :where(.dark) .ring-amber-100, :where(.dark) .ring-amber-200 { border-color: rgba(251, 191, 36, 0.25); --tw-ring-color: rgba(251, 191, 36, 0.25); }
+:where(.dark) .ring-navy-100 { --tw-ring-color: rgba(148, 166, 200, 0.18); }
+:where(.dark) .hover\:bg-red-50:hover { background-color: rgba(220, 38, 38, 0.14); }
+
+/* "Dark" primary buttons and active filter pills on older pages
+   (bg-gray-900) would disappear into a dark card. Use the gold accent,
+   the same color as primary actions elsewhere in dark mode. */
+:where(.dark) .bg-gray-900 { background-color: #FBBF24; color: #0F1A30; }
+:where(.dark) .border-gray-900 { border-color: #FBBF24; }
+:where(.dark) .hover\:bg-gray-700:hover { background-color: #FCD34D; }
+
+/* State variants used by older pages */
+:where(.dark) .has-\[\:checked\]\:bg-blue-50:has(:checked) { background-color: rgba(37, 99, 235, 0.18); }
+:where(.dark) .focus\:bg-gray-100:focus { background-color: rgba(255, 255, 255, 0.06); }
+:where(.dark) .focus\:text-gray-800:focus, :where(.dark) .focus\:text-gray-700:focus { color: #FFFFFF; }
+
+/* Form controls (@tailwindcss/forms paints them white) */
+:where(.dark) input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']),
+:where(.dark) select,
+:where(.dark) textarea {
+    background-color: #0F1729;
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #E6EBF5;
+}
+:where(.dark) input::placeholder, :where(.dark) textarea::placeholder { color: #64748B; }
+:where(.dark) input[type='checkbox'], :where(.dark) input[type='radio'] {
+    background-color: #0F1729;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Card shadow is invisible on dark; use a hairline instead */
+:where(.dark) .shadow-card, :where(.dark) .shadow-sm { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02); }

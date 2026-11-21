@@ -132,7 +132,7 @@
                                                   x-text="u.rate + '%'"></span>
                                             <span x-show="u.rate === null" class="text-slate-300">—</span>
                                         </td>
-                                        <td class="px-4 py-2.5 text-right text-slate-700" x-text="u.avg_hours === null ? '—' : u.avg_hours + ' hrs'"></td>
+                                        <td class="px-4 py-2.5 whitespace-nowrap text-right text-slate-700" x-text="u.avg_hours === null ? '—' : u.avg_hours + ' hrs'"></td>
                                     </tr>
                                 </template>
                             </tbody>
@@ -206,7 +206,7 @@
         window.addEventListener('load', () => {
             const C = window.SitrepCharts;
             C.line('trendChart', @json($trendLabels), @json($trendData), { label: 'SITREPs' });
-            C.doughnut('roleChart', @json($roleJson['labels']), @json($roleJson['data']), { centerLabel: 'Users', colors: [C.colors.navy, C.colors.navyMid, '#94A6C8'] });
+            C.doughnut('roleChart', @json($roleJson['labels']), @json($roleJson['data']), { centerLabel: 'Users' });
             C.doughnut('statusChart', @json($statusJson['labels']), @json($statusJson['data']), { statusColors: true, centerLabel: 'Total' });
             C.bar('typeChart', @json($typeJson['labels']), @json($typeJson['data']));
         });

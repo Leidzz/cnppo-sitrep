@@ -40,10 +40,10 @@
                     <x-range-toggle :current="$days" />
                     <x-btn variant="outline" onclick="window.print()"><x-icon name="printer" class="w-4 h-4" /> Print</x-btn>
                     <a href="{{ route('command.incoming') }}"
-                       class="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 rounded-lg text-sm font-semibold bg-navy-800 text-white hover:bg-navy-700 transition">
+                       class="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 rounded-lg text-sm font-semibold bg-navy-800 text-white hover:bg-navy-700 transition dark:bg-gold-400 dark:text-navy-900 dark:hover:bg-gold-300">
                         <x-icon name="inbox" class="w-4 h-4" /> Review Queue
                         @if ($newCount > 0)
-                            <span class="inline-flex min-w-[22px] justify-center rounded-full bg-gold-400 px-1.5 text-xs font-bold text-navy-900 tabular-nums">{{ $newCount }}</span>
+                            <span class="inline-flex min-w-[22px] justify-center rounded-full bg-gold-400 px-1.5 text-xs font-bold text-navy-900 tabular-nums dark:bg-navy-900 dark:text-gold-300">{{ $newCount }}</span>
                         @endif
                     </a>
                 </x-slot>
@@ -159,7 +159,7 @@
                                         @foreach ($hours as $hr => $n)
                                             @php
                                                 $level = $n === 0 ? 0 : (int) ceil($n / max($heatmap['max'], 1) * 4);
-                                                $cell = ['bg-slate-100', 'bg-navy-100', 'bg-navy-300', 'bg-navy-500', 'bg-navy-800'][$level];
+                                                $cell = ['bg-slate-100 dark:bg-white/[0.04]', 'bg-navy-100 dark:bg-navy-700', 'bg-navy-300 dark:bg-navy-500', 'bg-navy-500 dark:bg-navy-300', 'bg-navy-800 dark:bg-gold-400'][$level];
                                             @endphp
                                             <div class="aspect-square rounded-[3px] {{ $cell }}"
                                                  title="{{ $dayNames[$dow] }} {{ str_pad($hr, 2, '0', STR_PAD_LEFT) }}:00 — {{ $n }} {{ \Illuminate\Support\Str::plural('report', $n) }}"></div>
@@ -200,7 +200,7 @@
                         </dl>
                         <div class="mt-3 flex items-center justify-end gap-2 text-[11px] text-slate-500">
                             Fewer
-                            @foreach (['bg-slate-100', 'bg-navy-100', 'bg-navy-300', 'bg-navy-500', 'bg-navy-800'] as $c)
+                            @foreach (['bg-slate-100 dark:bg-white/[0.04]', 'bg-navy-100 dark:bg-navy-700', 'bg-navy-300 dark:bg-navy-500', 'bg-navy-500 dark:bg-navy-300', 'bg-navy-800 dark:bg-gold-400'] as $c)
                                 <span class="h-3 w-3 rounded-[3px] {{ $c }}"></span>
                             @endforeach
                             More

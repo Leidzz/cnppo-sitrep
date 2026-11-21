@@ -159,6 +159,19 @@ Defined in `tailwind.config.js`:
 
 After changing `tailwind.config.js` or `resources/css/app.css`, run `npm run build`.
 
+### Light / dark mode and the sidebar
+
+- **Toggle:** the *Light / Dark* switch at the bottom of the sidebar, or the sun/moon button in the top bar. The choice is saved per browser (`localStorage.theme`). With no saved choice, the app follows the operating system setting.
+- **No flash on load:** a small inline script in `<head>` of `layouts/app.blade.php` applies the `dark` class to `<html>` before the page paints.
+- **Printing** always uses light mode (the script switches it off on `beforeprint` and restores it on `afterprint`).
+- **Collapsible sidebar:** the panel button in the top bar shrinks the sidebar to icons only (saved as `localStorage['sidebar-collapsed']`). Collapsed styles use the `lg:[.sb-collapsed_&]:…` arbitrary variant, driven by an `sb-collapsed` class on `<html>`.
+- **Charts** re-color instantly on toggle: `chart-theme.js` reads its LIGHT/DARK tokens at draw time and listens for the `theme-changed` event.
+- **How dark mode is styled:**
+  1. The layout, shared components and dashboards use proper Tailwind `dark:` variants (`darkMode: 'class'` in `tailwind.config.js`).
+  2. Older pages (forms, tables, lists) are covered by a **compatibility layer** at the bottom of `resources/css/app.css` that remaps common light utilities (`bg-white`, `text-gray-900`, `border-gray-300`, …) under `:where(.dark)`. New code should use `dark:` variants instead of relying on it.
+  3. `@tailwind variants;` is placed right after `@tailwind utilities;` on purpose: it makes Tailwind emit `hover:`/`focus:`/`has-[]:` classes *before* the compatibility layer, so dark overrides for hover and selected states work. Do not remove it.
+- **Login page** (guest layout) stays light.
+
 ### Swapping in the official logo
 
 In `resources/views/layouts/app.blade.php`, find the comment *"Seal placeholder"* and replace the `PNP` circle with:

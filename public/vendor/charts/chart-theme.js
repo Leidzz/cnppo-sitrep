@@ -51,10 +51,28 @@
     // Navy-led so charts sit comfortably next to the brand chrome.
     const palette = ['#213458', '#2563EB', '#0D9488', '#D97706', '#7C3AED', '#94A6C8', '#DC2626'];
 
+    // Light / dark tokens. Everything theme-dependent reads T() at draw
+    // time, so a theme switch only needs chart.update() — no reload.
+    const LIGHT = {
+        grid: '#EEF2F7', tick: '#64748B', strong: '#16233F', card: '#FFFFFF', track: '#EEF2F7',
+        bar: '#3E5788', noData: '#94A3B8', palette,
+    };
+    const DARK = {
+        grid: 'rgba(255,255,255,0.06)', tick: '#8B9BB4', strong: '#F1F5FB', card: '#111A2E', track: 'rgba(255,255,255,0.08)',
+        bar: '#6079A6', noData: '#64748B',
+        palette: ['#94A6C8', '#3B82F6', '#14B8A6', '#F59E0B', '#A78BFA', '#64748B', '#F87171'],
+    };
+    const isDark = () => document.documentElement.classList.contains('dark');
+    const T = () => (isDark() ? DARK : LIGHT);
+
     // ---- Global defaults ---------------------------------------------------
     Chart.defaults.font.family = '"Public Sans", ui-sans-serif, system-ui, sans-serif';
     Chart.defaults.font.size = 11;
-    Chart.defaults.color = colors.slate;
+    function applyDefaults() {
+        Chart.defaults.color = T().tick;
+        Chart.defaults.borderColor = T().grid;
+    }
+    applyDefaults();
     Chart.defaults.maintainAspectRatio = false;
     Chart.defaults.animation.duration = 600;
 
@@ -90,7 +108,7 @@
             ctx.save();
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#94A3B8';
+            ctx.fillStyle = T().noData;
             ctx.font = `500 12px ${Chart.defaults.font.family}`;
             ctx.fillText(
                 (opts && opts.text) || 'No data for this period',
@@ -115,10 +133,10 @@
             ctx.save();
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = colors.navy;
+            ctx.fillStyle = T().strong;
             ctx.font = `700 22px ${Chart.defaults.font.family}`;
             ctx.fillText(total.toLocaleString(), x, y - 7);
-            ctx.fillStyle = colors.slate;
+            ctx.fillStyle = T().tick;
             ctx.font = `600 10px ${Chart.defaults.font.family}`;
             ctx.fillText(String(opts.label).toUpperCase(), x, y + 12);
             ctx.restore();
@@ -139,13 +157,13 @@
     // ---- Helpers -----------------------------------------------------------
     const valueAxis = () => ({
         beginAtZero: true,
-        ticks: { precision: 0 },
-        grid: { color: colors.grid },
+        ticks: { precision: 0, color: () => T().tick },
+        grid: { color: () => T().grid },
         border: { display: false },
     });
     const categoryAxis = (ticks = {}) => ({
         grid: { display: false },
-        ticks: { ...ticks },
+        ticks: { color: () => T().tick, ...ticks },
         border: { display: false },
     });
 
@@ -222,7 +240,7 @@
                 datasets: [{
                     label: opts.label || 'SITREPs',
                     data,
-                    backgroundColor: opts.colors || opts.color || colors.navyMid,
+                    backgroundColor: opts.colors || opts.color || (() => T().bar),
                     borderRadius: 4,
                     maxBarThickness: horizontal ? 22 : 44,
                 }],
@@ -240,12 +258,12 @@
     function doughnut(target, labels, data, opts = {}) {
         const node = el(target);
         if (!node) return null;
-        const bg = opts.colors || (opts.statusColors ? statusColorsFor(labels) : palette);
+        const bg = opts.colors || (opts.statusColors ? statusColorsFor(labels) : ((ctx) => T().palette[ctx.dataIndex % T().palette.length]));
         return new Chart(node, {
             type: 'doughnut',
             data: {
                 labels,
-                datasets: [{ data, backgroundColor: bg, borderWidth: 2, borderColor: '#FFFFFF', hoverOffset: 4 }],
+                datasets: [{ data, backgroundColor: bg, borderWidth: 2, borderColor: () => T().card, hoverOffset: 4 }],
             },
             options: {
                 cutout: opts.cutout || '64%',
@@ -330,10 +348,10 @@
                 const { ctx } = chart;
                 ctx.save();
                 ctx.textAlign = 'center';
-                ctx.fillStyle = colors.navy;
+                ctx.fillStyle = T().strong;
                 ctx.font = `700 26px ${Chart.defaults.font.family}`;
                 ctx.fillText(pct === null || pct === undefined ? '—' : `${value}%`, x, y - 8);
-                ctx.fillStyle = colors.slate;
+                ctx.fillStyle = T().tick;
                 ctx.font = `600 10px ${Chart.defaults.font.family}`;
                 ctx.fillText(String(opts.label || '').toUpperCase(), x, y + 10);
                 ctx.restore();
@@ -341,7 +359,7 @@
         };
         return new Chart(node, {
             type: 'doughnut',
-            data: { labels: ['Rate', ''], datasets: [{ data: [value, 100 - value], backgroundColor: [color, '#EEF2F7'], borderWidth: 0 }] },
+            data: { labels: ['Rate', ''], datasets: [{ data: [value, 100 - value], backgroundColor: (ctx) => (ctx.dataIndex === 0 ? color : T().track), borderWidth: 0 }] },
             options: {
                 rotation: -90, circumference: 180, cutout: '74%',
                 plugins: { legend: { display: false }, tooltip: { enabled: false }, sitrepNoData: false },
@@ -349,6 +367,12 @@
             plugins: [gaugeText],
         });
     }
+
+    // Re-color every chart when the user switches light/dark mode.
+    window.addEventListener('theme-changed', () => {
+        applyDefaults();
+        Object.values(Chart.instances).forEach((c) => c.update('none'));
+    });
 
     window.SitrepCharts = { colors, palette, STATUS_COLORS, line, multiLine, bar, stackedBar, doughnut, gauge };
 })();

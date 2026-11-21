@@ -25,7 +25,7 @@
         'green' => ['chip' => 'bg-green-50 text-green-700 ring-green-100', 'rule' => 'bg-status-validated', 'spark' => '#16A34A'],
         'red'   => ['chip' => 'bg-red-50 text-red-700 ring-red-100',       'rule' => 'bg-status-returned',  'spark' => '#DC2626'],
         'gray'  => ['chip' => 'bg-slate-100 text-slate-600 ring-slate-200','rule' => 'bg-status-draft',     'spark' => '#64748B'],
-        'navy'  => ['chip' => 'bg-navy-50 text-navy-700 ring-navy-100',    'rule' => 'bg-navy-700',         'spark' => '#213458'],
+        'navy'  => ['chip' => 'bg-navy-50 text-navy-700 ring-navy-100',    'rule' => 'bg-navy-700 dark:bg-navy-400', 'spark' => '#6079A6'],
     ];
     $t = $tints[$tint] ?? $tints['blue'];
 
@@ -55,18 +55,18 @@
 @endphp
 
 <{{ $tag }} @if($href) href="{{ $href }}" @endif
-    {{ $attributes->merge(['class' => 'group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-card transition print:break-inside-avoid'.($href ? ' hover:shadow-card-hover hover:border-slate-300 hover:-translate-y-0.5' : '')]) }}>
+    {{ $attributes->merge(['class' => 'group relative flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-card transition print:break-inside-avoid dark:border-white/[0.07] dark:bg-[#111A2E] dark:shadow-none'.($href ? ' hover:shadow-card-hover hover:border-slate-300 hover:-translate-y-0.5 dark:hover:border-white/20' : '')]) }}>
     <span class="absolute inset-x-0 top-0 h-[3px] {{ $t['rule'] }}" aria-hidden="true"></span>
 
     <div class="flex items-start justify-between gap-3">
-        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 leading-snug">{{ $label }}</p>
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 leading-snug dark:text-slate-400">{{ $label }}</p>
         <span class="h-9 w-9 shrink-0 rounded-lg ring-1 {{ $t['chip'] }} flex items-center justify-center">
             <x-icon name="{{ $icon }}" class="w-[18px] h-[18px]" />
         </span>
     </div>
 
     <div class="mt-2 flex items-end justify-between gap-3">
-        <p class="text-3xl font-bold tracking-tight text-navy-900 tabular-nums leading-none">
+        <p class="text-3xl font-bold tracking-tight text-navy-900 tabular-nums leading-none dark:text-white">
             {{-- Real number is rendered server-side first (tests assertSee() it);
                  Alpine then animates 0 -> N on load. --}}
             @if ($isWhole)
@@ -89,7 +89,7 @@
 
     @if ($delta !== null || $subtitle || $href)
         <div class="mt-auto pt-4">
-            <div class="flex min-h-[20px] items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            <div class="flex min-h-[20px] items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-white/[0.06] dark:text-slate-400">
                 @if ($delta !== null)
                     <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-semibold tabular-nums {{ $deltaClass }}">
                         <x-icon name="{{ $delta < 0 ? 'trend-down' : 'trend-up' }}" class="w-3.5 h-3.5" />
