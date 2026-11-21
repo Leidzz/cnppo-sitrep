@@ -20,6 +20,17 @@
         'building'  => 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
         'target'    => 'M21 12a9 9 0 11-18 0 9 9 0 0118 0zM12 3v3m0 12v3M3 12h3m12 0h3M15 12a3 3 0 11-6 0 3 3 0 016 0z',
         'chart'     => 'M3 3v18h18M8 17v-5M13 17V8M18 17v-9',
+        // Phase 2 additions ('chevron' was referenced by stat cards but missing,
+        // so it fell back to the plus sign)
+        'chevron'   => 'M9 6l6 6-6 6',
+        'arrow-right' => 'M5 12h14M13 6l6 6-6 6',
+        'printer'   => 'M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-6a2 2 0 012-2h14a2 2 0 012 2v6a1 1 0 01-1 1h-2M6 14h12v7H6z',
+        'calendar'  => 'M8 3v4M16 3v4M4 9h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z',
+        'trend-up'  => 'M3 17l6-6 4 4 8-8M15 7h6v6',
+        'trend-down'=> 'M3 7l6 6 4-4 8 8M15 17h6v-6',
+        'alert'     => 'M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z',
+        'activity'  => 'M22 12h-4l-3 9L9 3l-3 9H2',
+        'shield'    => 'M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z',
     ];
 @endphp
 

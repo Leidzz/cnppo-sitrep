@@ -10,16 +10,10 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=public-sans:400,500,600,700&display=swap" rel="stylesheet" />
 
-        {{-- Design v3: entrance animation keyframes used by .anim-rise across pages --}}
-        <style>
-            @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-            .anim-rise { animation: rise .45s cubic-bezier(.22,.9,.35,1) both; }
-        </style>
-
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @stack('head')
     </head>
-    <body class="font-sans antialiased bg-[#F3F4F6]">
+    <body class="font-sans antialiased bg-canvas text-slate-800">
     @php
         $user = auth()->user();
         $unreadCount = $user->notifications()->where('is_read', false)->count();
@@ -52,13 +46,17 @@
             ],
         ];
         $menu = collect($menus)->first(fn ($items, $role) => $user->hasRole($role)) ?? [];
+
+        // Friendly role label for the sidebar identity block
+        $roleLabels = ['administrator' => 'Administrator', 'command-center' => 'Command Center', 'reporting-personnel' => 'Reporting Personnel'];
+        $roleLabel = collect($roleLabels)->first(fn ($label, $role) => $user->hasRole($role)) ?? 'User';
     @endphp
 
     <div x-data="{ sidebarOpen: false }" class="min-h-screen">
         {{-- ============ SIDEBAR ============ --}}
         <div x-show="sidebarOpen" x-transition.opacity class="fixed inset-0 z-30 bg-black/50 lg:hidden" @click="sidebarOpen = false"></div>
 
-        <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-[#16233F] text-white flex flex-col
+        <aside class="fixed inset-y-0 left-0 z-40 w-64 bg-navy-800 text-white flex flex-col print:hidden
                       transform transition-transform duration-200 -translate-x-full lg:translate-x-0"
                :class="sidebarOpen ? 'translate-x-0' : ''">
 
@@ -66,25 +64,27 @@
             <div class="px-5 pt-5 pb-4 border-b border-white/10">
                 <div class="flex items-center gap-3">
                     {{-- Seal placeholder: swap for the official PNP logo image when CNPPO provides it --}}
-                    <div class="h-11 w-11 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-lg font-bold text-amber-400 border border-amber-400/40">PNP</div>
+                    <div class="h-11 w-11 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-sm font-bold tracking-wide text-gold-400 ring-1 ring-gold-400/50">PNP</div>
                     <div>
                         <p class="text-lg font-bold leading-tight tracking-wide">CNPPO</p>
                         <p class="text-[10px] uppercase tracking-wider text-white/60">Camarines Norte Police Provincial Office</p>
                     </div>
                 </div>
                 <p class="mt-3 text-sm font-semibold tracking-wide text-white/90">SITREP Monitoring System</p>
-                <div class="mt-2 h-0.5 w-14 bg-amber-400"></div>
+                <div class="mt-2 h-0.5 w-14 bg-gold-400"></div>
             </div>
 
             {{-- Nav --}}
-            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1" aria-label="Main">
+                <p class="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-white/40">Menu</p>
                 @foreach ($menu as $item)
-                    <a href="{{ route($item['route']) }}"
-                       class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
-                              {{ request()->routeIs($item['match'])
-                                 ? 'bg-blue-600 text-white shadow'
-                                 : 'text-white/70 hover:bg-white/10 hover:text-white' }}">
-                        <x-icon name="{{ $item['icon'] }}" class="w-5 h-5 shrink-0" />
+                    @php $active = request()->routeIs($item['match']); @endphp
+                    <a href="{{ route($item['route']) }}" @if($active) aria-current="page" @endif
+                       class="relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition focus-visible:ring-offset-navy-800
+                              {{ $active
+                                 ? 'bg-white/10 text-white before:absolute before:-left-3 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-r before:bg-gold-400'
+                                 : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
+                        <x-icon name="{{ $item['icon'] }}" class="w-5 h-5 shrink-0 {{ $active ? 'text-gold-400' : '' }}" />
                         <span class="flex-1">{{ $item['label'] }}</span>
                         @if (! empty($item['badge']))
                             <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold">{{ $item['badge'] }}</span>
@@ -93,18 +93,25 @@
                 @endforeach
             </nav>
 
-           {{-- Footer: version badge instead of the tagline --}}
-            <div class="px-5 py-4 border-t border-white/10">
-                <div class="h-0.5 w-8 bg-amber-400 mb-2"></div>
-                <p class="text-[10px] tracking-wider text-white/40">WEB-BASED SITREP SYSTEM</p>
-                <p class="text-[10px] text-white/25">CNPPO · v1.0</p>
+            {{-- Footer: signed-in identity + version --}}
+            <div class="px-4 py-4 border-t border-white/10">
+                <div class="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-2.5">
+                    <div class="h-9 w-9 shrink-0 rounded-full bg-gold-400/15 ring-1 ring-gold-400/40 flex items-center justify-center text-gold-300 font-bold text-sm">
+                        {{ strtoupper(substr($user->name, 0, 1)) }}
+                    </div>
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-white">{{ $user->name }}</p>
+                        <p class="truncate text-[11px] text-white/50">{{ $roleLabel }}@if($user->unit) · {{ $user->unit->name }}@endif</p>
+                    </div>
+                </div>
+                <p class="mt-3 px-1 text-[10px] tracking-wider text-white/30">WEB-BASED SITREP SYSTEM · v1.0</p>
             </div>
         </aside>
 
         {{-- ============ MAIN COLUMN ============ --}}
-        <div class="lg:pl-64 flex flex-col min-h-screen">
+        <div class="lg:pl-64 print:pl-0 flex flex-col min-h-screen">
             {{-- Top bar --}}
-            <header class="sticky top-0 z-20 bg-[#16233F] text-white shadow">
+            <header class="sticky top-0 z-20 bg-navy-800 text-white shadow print:hidden">
                 <div class="flex items-center gap-3 px-4 sm:px-6 h-16">
                     <button @click="sidebarOpen = true" class="lg:hidden p-2 -ml-2" aria-label="Open menu">
                         <x-icon name="menu" class="w-6 h-6" />
@@ -127,7 +134,7 @@
                     {{-- User dropdown --}}
                     <div x-data="{ open: false }" class="relative">
                         <button @click="open = !open" class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/10">
-                            <div class="h-8 w-8 rounded-full bg-amber-400/20 border border-amber-400/50 flex items-center justify-center text-amber-300 font-bold text-sm">
+                            <div class="h-8 w-8 rounded-full bg-gold-400/15 ring-1 ring-gold-400/40 flex items-center justify-center text-gold-300 font-bold text-sm">
                                 {{ strtoupper(substr($user->name, 0, 1)) }}
                             </div>
                             <span class="hidden sm:block text-sm font-medium">{{ $user->name }}</span>

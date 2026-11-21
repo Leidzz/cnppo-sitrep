@@ -1,3 +1,69 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    /* Keyboard users get a clear focus ring; mouse clicks don't flash one. */
+    :focus-visible {
+        @apply outline-none ring-2 ring-gold-400 ring-offset-2 ring-offset-white;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    /* Entrance animation used across pages (moved here from the layout). */
+    .anim-rise {
+        animation: rise 0.45s cubic-bezier(0.22, 0.9, 0.35, 1) both;
+    }
+
+    /* Chart skeleton: visible until chart-theme.js marks the body as ready. */
+    .chart-skeleton {
+        @apply absolute inset-0 flex items-end gap-2 px-2 pb-6 transition-opacity duration-300;
+    }
+    .chart-skeleton > span {
+        @apply flex-1 rounded-t bg-navy-100 animate-pulse;
+    }
+    [data-chart-body][data-ready] .chart-skeleton {
+        @apply opacity-0 pointer-events-none;
+    }
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .anim-rise {
+        animation: none;
+    }
+}
+
+/* Print: clean one-column briefing copy. Sidebar, top bar and controls hide
+   via the print:hidden utility; this handles what utilities can't. */
+@media print {
+    @page {
+        margin: 12mm;
+    }
+    body {
+        background: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .anim-rise {
+        animation: none !important;
+    }
+    .shadow-card,
+    .shadow-card-hover {
+        box-shadow: none !important;
+    }
+}

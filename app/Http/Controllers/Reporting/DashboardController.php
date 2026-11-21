@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Reporting;
 
 use App\Http\Controllers\Controller;
 use App\Models\Status;
+use App\Services\DashboardMetricsService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -15,11 +17,12 @@ class DashboardController extends Controller
      *
      * Route middleware (auth + role:reporting-personnel) has already verified
      * the user. Counts come from actual system records (spec Section 4):
-     * one grouped query over the officer's own SITREPs — no hardcoded numbers.
+     * grouped queries over the officer's own SITREPs — no hardcoded numbers.
      */
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, DashboardMetricsService $metrics): View
     {
         $user = $request->user();
+        $days = $metrics->normalizeRange($request->query('range', 30));
 
         $statuses = Status::whereIn('name', [
             'Draft', 'Submitted', 'Under Review', 'Validated', 'Returned for Correction',
@@ -39,23 +42,22 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // Officer's own last-7-day submission activity (for the trend chart)
-        $trendRaw = $user->sitreps()
-            ->whereNotNull('submitted_at')
-            ->where('submitted_at', '>=', now()->subDays(6)->startOfDay())
-            ->selectRaw('DATE(submitted_at) as day, count(*) as total')
-            ->groupBy('day')
-            ->pluck('total', 'day');
+        // Returned reports the officer must fix, with the reviewer's reason.
+        $returnedId = $statuses->firstWhere('name', 'Returned for Correction')?->id;
+        $needsAction = $user->sitreps()
+            ->with('reportType')
+            ->where('current_status_id', $returnedId)
+            ->orderByDesc('reviewed_at')
+            ->limit(3)
+            ->get();
+        $needsActionCount = (int) ($counts[$returnedId] ?? 0);
 
-        $trendLabels = [];
-        $trendData = [];
-        foreach (range(6, 0) as $i) {
-            $d = now()->subDays($i)->toDateString();
-            $trendLabels[] = now()->subDays($i)->format('M d');
-            $trendData[] = (int) ($trendRaw[$d] ?? 0);
-        }
+        $trend = $metrics->submissionTrend($user->sitreps(), days: $days);
 
-        // Card labels: keep officer-facing names, shorten the long one
+        // Personal track record (all time)
+        $since = Carbon::create(2000);
+        $validatedId = $statuses->firstWhere('name', 'Validated')?->id;
+
         $labels = [
             'Draft' => 'Draft',
             'Submitted' => 'Submitted',
@@ -65,12 +67,20 @@ class DashboardController extends Controller
         ];
 
         return view('reporting.dashboard', [
+            'days' => $days,
             'statuses' => $statuses,
             'counts' => $counts,
             'recent' => $recent,
             'labels' => $labels,
-            'trendLabels' => $trendLabels,
-            'trendData' => $trendData,
+            'needsAction' => $needsAction,
+            'needsActionCount' => $needsActionCount,
+            'trendLabels' => $trend['labels'],
+            'trendData' => $trend['data'],
+            'byStatus' => $metrics->countsByStatus($user->sitreps()),
+            'validationRate' => $metrics->validationRate($since, now(), $user->id),
+            'avgHoursToValidation' => $metrics->avgTurnaroundHours(
+                $user->sitreps()->where('current_status_id', $validatedId), $since, now()
+            ),
         ]);
     }
 }
